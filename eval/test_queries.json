@@ -1,0 +1,68 @@
+{
+  "test_queries": [
+    {
+      "id": "Q1",
+      "query": "How does a segment tree differ from a Fenwick tree for range queries?",
+      "type": "graph-hop",
+      "expected_retrieval": {
+        "patterns": ["Segment Tree", "Fenwick Tree"],
+        "edge_type": "ALTERNATIVE_TO",
+        "should_return_templates": true
+      },
+      "expected_behavior": "Returns both patterns, the ALTERNATIVE_TO tradeoff, and both C++ templates."
+    },
+    {
+      "id": "Q2",
+      "query": "What do I need to know before learning suffix arrays?",
+      "type": "graph-hop",
+      "expected_retrieval": {
+        "target_pattern": "Suffix Array",
+        "expected_prerequisite_chain": ["Binary Search", "Suffix Array"],
+        "edge_type": "PREREQUISITE_OF"
+      },
+      "expected_behavior": "Returns the transitive prerequisite chain: Binary Search → Suffix Array."
+    },
+    {
+      "id": "Q3",
+      "query": "Give me a C++ template for two-pointers on a sorted array",
+      "type": "hybrid",
+      "expected_retrieval": {
+        "pattern": "Two Pointers",
+        "should_return_template": true
+      },
+      "expected_behavior": "Returns the Two Pointers C++ template with explanation.",
+      "phase": "4+"
+    },
+    {
+      "id": "Q4",
+      "query": "What's the time complexity of a sparse table?",
+      "type": "semantic+graph",
+      "expected_retrieval": {
+        "pattern": "Sparse Table",
+        "time_complexity": "O(n log n) build, O(1) query",
+        "space_complexity": "O(n log n)"
+      },
+      "expected_behavior": "Returns the Sparse Table pattern with its complexity properties."
+    },
+    {
+      "id": "Q5",
+      "query": "Is a segment tree O(log n) or O(n log n) per query?",
+      "type": "contradiction",
+      "expected_retrieval": {
+        "note": "Requires two ingested sources that claim different complexities for Segment Tree queries."
+      },
+      "expected_behavior": "Triggers the contradiction path, surfacing both claims with source attribution.",
+      "phase": "6+"
+    },
+    {
+      "id": "Q6",
+      "query": "Explain the Aho-Corasick automaton for multi-pattern string matching",
+      "type": "out-of-corpus",
+      "expected_retrieval": {
+        "note": "Aho-Corasick is NOT in the ingested corpus."
+      },
+      "expected_behavior": "Should ABSTAIN: return 'I don't have enough grounded information' rather than hallucinate.",
+      "phase": "5+"
+    }
+  ]
+}
