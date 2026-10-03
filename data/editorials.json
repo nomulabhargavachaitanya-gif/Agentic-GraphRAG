@@ -1,0 +1,202 @@
+[
+  {
+    "id": "CF-1547B",
+    "title": "Alphabetical Strings",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/92064",
+    "difficulty": "800",
+    "author": "vovuh",
+    "date_published": "2021-07-11",
+    "editorial": "We can use a two-pointer approach. Maintain left and right pointers on the string. At each step the next character (in alphabetical order) must be at one of the two ends. Start with 'a' and greedily check if the current character is at position `lo` or `hi`. If neither matches, the answer is NO.\n\n```cpp\nbool solve(string& s) {\n    int n = s.size();\n    int lo = 0, hi = n - 1;\n    for (int i = 0; i < n; i++) {\n        char c = 'a' + i;\n        if (s[lo] == c) lo++;\n        else if (s[hi] == c) hi--;\n        else return false;\n    }\n    return true;\n}\n```\n\nTime complexity: O(n). Space: O(1). This is a classic two-pointer greedy."
+  },
+  {
+    "id": "CF-1462C",
+    "title": "Unique Number",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/85547",
+    "difficulty": "900",
+    "author": "MikeMirzayanov",
+    "date_published": "2020-12-15",
+    "editorial": "Greedy approach: to minimize the number of digits, always pick the largest digit available. Start from 9 and work downward. If the remaining sum is ≥ current digit, subtract it and add the digit; otherwise use the remainder.\n\n```cpp\nstring solve(int x) {\n    if (x > 45) return \"-1\";\n    string res;\n    for (int d = 9; d >= 1 && x > 0; d--) {\n        if (x >= d) { res += ('0' + d); x -= d; }\n        else { res += ('0' + x); x = 0; }\n    }\n    reverse(res.begin(), res.end());\n    return res;\n}\n```\n\nTime: O(1) since at most 9 digits. A straightforward greedy on digit selection."
+  },
+  {
+    "id": "CF-1800D",
+    "title": "Remove Two Letters",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/113245",
+    "difficulty": "1000",
+    "author": "FBI",
+    "date_published": "2023-03-07",
+    "editorial": "If we remove two adjacent characters at positions i and i+1, the resulting string only differs from removing at positions j and j+1 when the characters at the boundaries differ. Count how many adjacent pairs have s[i] != s[i+2]. The answer is 1 + (count of such pairs).\n\nThis is essentially a sliding window of size 2 with boundary comparison.\n\n```cpp\nint solve(string& s) {\n    int n = s.size(), cnt = 0;\n    for (int i = 0; i + 2 < n; i++)\n        if (s[i] != s[i + 2]) cnt++;\n    return cnt + 1;\n}\n```\n\nTime: O(n), Space: O(1)."
+  },
+  {
+    "id": "LC-3",
+    "title": "Longest Substring Without Repeating Characters",
+    "source": "leetcode",
+    "url": "https://leetcode.com/problems/longest-substring-without-repeating-characters/",
+    "difficulty": "Medium",
+    "author": "leetcode-editorial",
+    "date_published": "2023-01-15",
+    "editorial": "Use a sliding window with a hash set. Expand the right pointer; if a duplicate is found, shrink from the left until the window is valid again. Track the maximum window length.\n\n```cpp\nint lengthOfLongestSubstring(string s) {\n    unordered_set<char> window;\n    int lo = 0, best = 0;\n    for (int hi = 0; hi < (int)s.size(); hi++) {\n        while (window.count(s[hi]))\n            window.erase(s[lo++]);\n        window.insert(s[hi]);\n        best = max(best, hi - lo + 1);\n    }\n    return best;\n}\n```\n\nClassic sliding window pattern. Time: O(n), Space: O(min(n, alphabet_size))."
+  },
+  {
+    "id": "LC-76",
+    "title": "Minimum Window Substring",
+    "source": "leetcode",
+    "url": "https://leetcode.com/problems/minimum-window-substring/",
+    "difficulty": "Hard",
+    "author": "leetcode-editorial",
+    "date_published": "2023-02-20",
+    "editorial": "Sliding window with character frequency maps. Expand right pointer until all characters in t are covered, then shrink left to find minimum. Track 'formed' count vs 'required' distinct chars.\n\n```cpp\nstring minWindow(string s, string t) {\n    unordered_map<char,int> need, have;\n    for (char c : t) need[c]++;\n    int required = need.size(), formed = 0;\n    int lo = 0, best_len = INT_MAX, best_lo = 0;\n    for (int hi = 0; hi < (int)s.size(); hi++) {\n        have[s[hi]]++;\n        if (need.count(s[hi]) && have[s[hi]] == need[s[hi]])\n            formed++;\n        while (formed == required) {\n            if (hi - lo + 1 < best_len) {\n                best_len = hi - lo + 1;\n                best_lo = lo;\n            }\n            have[s[lo]]--;\n            if (need.count(s[lo]) && have[s[lo]] < need[s[lo]])\n                formed--;\n            lo++;\n        }\n    }\n    return best_len == INT_MAX ? \"\" : s.substr(best_lo, best_len);\n}\n```\n\nThis is a variable-size sliding window. Time: O(|s| + |t|). Space: O(|s| + |t|)."
+  },
+  {
+    "id": "CF-1837D",
+    "title": "Bracket Coloring",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/117124",
+    "difficulty": "1600",
+    "author": "maomao90",
+    "date_published": "2023-06-10",
+    "editorial": "Use prefix sums on bracket balance. Convert '(' to +1 and ')' to -1. The prefix sum at any point tells you the nesting depth. If the total sum is nonzero, the answer is -1. Otherwise, count how many distinct 'layers' we need based on negative prefix sums.\n\n```cpp\nint solve(string& s) {\n    int n = s.size();\n    vector<int> prefix(n + 1, 0);\n    for (int i = 0; i < n; i++)\n        prefix[i + 1] = prefix[i] + (s[i] == '(' ? 1 : -1);\n    if (prefix[n] != 0) return -1;\n    int min_pref = *min_element(prefix.begin(), prefix.end());\n    return min_pref < 0 ? 2 : 1;\n}\n```\n\nKey insight: prefix sums convert bracket problems into range queries. Time: O(n). Space: O(n)."
+  },
+  {
+    "id": "LC-560",
+    "title": "Subarray Sum Equals K",
+    "source": "leetcode",
+    "url": "https://leetcode.com/problems/subarray-sum-equals-k/",
+    "difficulty": "Medium",
+    "author": "leetcode-editorial",
+    "date_published": "2023-04-12",
+    "editorial": "Use prefix sums with a hash map. For each prefix[i], we need to find how many previous prefix[j] satisfy prefix[i] - prefix[j] == k, i.e., prefix[j] == prefix[i] - k. Store prefix sum frequencies.\n\n```cpp\nint subarraySum(vector<int>& nums, int k) {\n    unordered_map<int,int> freq;\n    freq[0] = 1;\n    int prefix = 0, count = 0;\n    for (int x : nums) {\n        prefix += x;\n        count += freq[prefix - k];\n        freq[prefix]++;\n    }\n    return count;\n}\n```\n\nThis is the prefix sum + hash map pattern. Time: O(n), Space: O(n). Note this works with negative numbers unlike sliding window."
+  },
+  {
+    "id": "CF-1920C",
+    "title": "Sending Messages",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/123987",
+    "difficulty": "1300",
+    "author": "Vladosiya",
+    "date_published": "2023-12-23",
+    "editorial": "Binary search on the answer. We can binary search on the number of charges needed. For a given number of charges k, check if it's feasible using greedy simulation. The predicate is monotonic: if k charges suffice, then k+1 also suffice.\n\n```cpp\nbool canSend(vector<long long>& t, long long f, long long a, long long b, int charges) {\n    long long cur = f;\n    for (int i = 0; i < (int)t.size(); i++) {\n        long long diff = t[i] - (i > 0 ? t[i-1] : 0);\n        cur -= diff * a;\n        if (cur <= 0) return false;\n    }\n    return true;\n}\n\nlong long solve(vector<long long>& t, long long f, long long a, long long b) {\n    long long lo = 0, hi = 1e18;\n    while (hi - lo > 1) {\n        long long mid = lo + (hi - lo) / 2;\n        if (canSend(t, f, a, b, mid)) hi = mid;\n        else lo = mid;\n    }\n    return hi;\n}\n```\n\nClassic binary search on answer with a monotonic predicate. Time: O(n log C). Space: O(1)."
+  },
+  {
+    "id": "LC-35",
+    "title": "Search Insert Position",
+    "source": "leetcode",
+    "url": "https://leetcode.com/problems/search-insert-position/",
+    "difficulty": "Easy",
+    "author": "leetcode-editorial",
+    "date_published": "2023-01-05",
+    "editorial": "Standard binary search for the lower bound. Find the leftmost position where target could be inserted while keeping the array sorted. This is equivalent to std::lower_bound.\n\n```cpp\nint searchInsert(vector<int>& nums, int target) {\n    int lo = 0, hi = nums.size();\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (nums[mid] < target) lo = mid + 1;\n        else hi = mid;\n    }\n    return lo;\n}\n```\n\nPure binary search. Time: O(log n). Space: O(1). The loop invariant is: answer is in [lo, hi]."
+  },
+  {
+    "id": "CF-1354D",
+    "title": "Multiset",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/77570",
+    "difficulty": "1900",
+    "author": "vovuh",
+    "date_published": "2020-05-17",
+    "editorial": "Maintain a Fenwick Tree (BIT) over the values. For insertions, do point update +1. For deletions by k-th smallest, binary search on the BIT prefix sums to find the k-th element, then do point update -1.\n\nThe BIT supports prefix sum queries in O(log n), and we binary search on the BIT itself to find the k-th element.\n\n```cpp\nstruct BIT {\n    int n;\n    vector<int> tree;\n    BIT(int n) : n(n), tree(n + 1, 0) {}\n    void update(int i, int v) {\n        for (; i <= n; i += i & (-i)) tree[i] += v;\n    }\n    int query(int i) {\n        int s = 0;\n        for (; i > 0; i -= i & (-i)) s += tree[i];\n        return s;\n    }\n    int kth(int k) {\n        int pos = 0;\n        for (int pw = 1 << 20; pw; pw >>= 1)\n            if (pos + pw <= n && tree[pos + pw] < k) {\n                pos += pw;\n                k -= tree[pos];\n            }\n        return pos + 1;\n    }\n};\n\nvoid solve() {\n    int n, q;\n    cin >> n >> q;\n    BIT bit(n);\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) {\n        cin >> a[i];\n        bit.update(a[i], 1);\n    }\n    while (q--) {\n        int k; cin >> k;\n        if (k > 0) bit.update(k, 1);\n        else {\n            int pos = bit.kth(-k);\n            bit.update(pos, -1);\n        }\n    }\n}\n```\n\nFenwick Tree with k-th element query via binary lifting. Time: O((n+q) log n). Space: O(n)."
+  },
+  {
+    "id": "LC-307",
+    "title": "Range Sum Query - Mutable",
+    "source": "leetcode",
+    "url": "https://leetcode.com/problems/range-sum-query-mutable/",
+    "difficulty": "Medium",
+    "author": "leetcode-editorial",
+    "date_published": "2023-03-22",
+    "editorial": "Classic segment tree problem. Build a segment tree over the array. Point updates modify a leaf and propagate up. Range sum queries aggregate nodes covering the interval.\n\nAlternatively, a Fenwick Tree (BIT) works here since the operation (sum) is invertible.\n\n```cpp\nclass NumArray {\n    int n;\n    vector<int> tree;\n    void build(vector<int>& a, int v, int tl, int tr) {\n        if (tl == tr) { tree[v] = a[tl]; return; }\n        int tm = (tl + tr) / 2;\n        build(a, 2*v, tl, tm);\n        build(a, 2*v+1, tm+1, tr);\n        tree[v] = tree[2*v] + tree[2*v+1];\n    }\n    void upd(int v, int tl, int tr, int pos, int val) {\n        if (tl == tr) { tree[v] = val; return; }\n        int tm = (tl + tr) / 2;\n        if (pos <= tm) upd(2*v, tl, tm, pos, val);\n        else upd(2*v+1, tm+1, tr, pos, val);\n        tree[v] = tree[2*v] + tree[2*v+1];\n    }\n    int qry(int v, int tl, int tr, int l, int r) {\n        if (l > r) return 0;\n        if (l == tl && r == tr) return tree[v];\n        int tm = (tl + tr) / 2;\n        return qry(2*v, tl, tm, l, min(r, tm))\n             + qry(2*v+1, tm+1, tr, max(l, tm+1), r);\n    }\npublic:\n    NumArray(vector<int>& nums) : n(nums.size()), tree(4*n) {\n        build(nums, 1, 0, n-1);\n    }\n    void update(int i, int val) { upd(1, 0, n-1, i, val); }\n    int sumRange(int l, int r) { return qry(1, 0, n-1, l, r); }\n};\n```\n\nSegment tree: O(n) build, O(log n) update and query. Note: both Segment Tree and Fenwick Tree solve this; Fenwick is simpler for sum but Segment Tree generalises to min/max/GCD.\n\nSome sources claim Segment Tree queries are O(n log n) but this is incorrect — they are O(log n) per query. The build is O(n)."
+  },
+  {
+    "id": "CF-1759E",
+    "title": "Binary Inversions",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/108895",
+    "difficulty": "1300",
+    "author": "mesanu",
+    "date_published": "2022-11-20",
+    "editorial": "Use prefix sums to count inversions efficiently. Precompute prefix count of 1s and suffix count of 0s. For each element, if we flip it, recompute the inversion count contribution.\n\n```cpp\nlong long solve(vector<int>& a) {\n    int n = a.size();\n    vector<int> pref1(n + 1, 0), suf0(n + 1, 0);\n    for (int i = 0; i < n; i++)\n        pref1[i + 1] = pref1[i] + (a[i] == 1);\n    for (int i = n - 1; i >= 0; i--)\n        suf0[i] = suf0[i + 1] + (a[i] == 0);\n    \n    long long base = 0;\n    for (int i = 0; i < n; i++)\n        if (a[i] == 1) base += suf0[i + 1];\n    \n    long long best = base;\n    for (int i = 0; i < n; i++) {\n        long long cur;\n        if (a[i] == 0)\n            cur = base + suf0[i + 1] - pref1[i];\n        else\n            cur = base - suf0[i + 1] + pref1[i];\n        best = max(best, cur);\n    }\n    return best;\n}\n```\n\nPrefix sums enable O(1) recomputation of inversions when flipping each element. Total time: O(n)."
+  },
+  {
+    "id": "CF-1675D",
+    "title": "Vertical Paths",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/102380",
+    "difficulty": "1300",
+    "author": "Vladosiya",
+    "date_published": "2022-05-08",
+    "editorial": "Greedy on a tree. Every leaf must be the end of some vertical path. Start from each leaf and walk up to the root, marking visited nodes. Each contiguous unvisited chain from a leaf upward forms one path.\n\nThis is not a two-pointers or segment tree problem — it's a tree traversal.\n\n```cpp\nvoid solve() {\n    int n; cin >> n;\n    vector<int> par(n + 1);\n    vector<bool> has_child(n + 1, false);\n    int root = -1;\n    for (int i = 1; i <= n; i++) {\n        cin >> par[i];\n        if (par[i] == i) root = i;\n        else has_child[par[i]] = true;\n    }\n    vector<bool> vis(n + 1, false);\n    vector<vector<int>> paths;\n    for (int i = 1; i <= n; i++) {\n        if (has_child[i]) continue;\n        vector<int> path;\n        int v = i;\n        while (!vis[v]) {\n            vis[v] = true;\n            path.push_back(v);\n            if (v == root) break;\n            v = par[v];\n        }\n        reverse(path.begin(), path.end());\n        paths.push_back(path);\n    }\n    // output paths\n}\n```\n\nTree traversal from leaves, not a standard algorithmic pattern. Time: O(n)."
+  },
+  {
+    "id": "LC-1964",
+    "title": "Find the Longest Valid Obstacle Course at Each Position",
+    "source": "leetcode",
+    "url": "https://leetcode.com/problems/find-the-longest-valid-obstacle-course-at-each-position/",
+    "difficulty": "Hard",
+    "author": "leetcode-editorial",
+    "date_published": "2023-05-07",
+    "editorial": "This is a variant of Longest Non-Decreasing Subsequence, solvable with binary search + patience sorting. Maintain a sorted array of tail elements. For each element, binary search for the rightmost position where we can extend.\n\n```cpp\nvector<int> longestObstacleCourseAtEachPosition(vector<int>& obstacles) {\n    vector<int> tails, res;\n    for (int x : obstacles) {\n        auto it = upper_bound(tails.begin(), tails.end(), x);\n        int pos = it - tails.begin();\n        if (it == tails.end()) tails.push_back(x);\n        else *it = x;\n        res.push_back(pos + 1);\n    }\n    return res;\n}\n```\n\nBinary search on the tails array. Time: O(n log n). Space: O(n). Same technique as LIS but with upper_bound for non-decreasing."
+  },
+  {
+    "id": "CF-1900C",
+    "title": "Anji's Binary Tree",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/123223",
+    "difficulty": "1300",
+    "author": "Anji",
+    "date_published": "2023-11-25",
+    "editorial": "DFS on binary tree. At each node, determine the minimum changes to redirect the path to a leaf. If the current direction is L/R and we need to go to the other child, that costs 1 change.\n\nThis is tree DP, not a standard graph pattern.\n\n```cpp\nvoid solve() {\n    int n; cin >> n;\n    string s; cin >> s; s = \" \" + s;\n    vector<int> L(n+1), R(n+1);\n    for (int i = 1; i <= n; i++) cin >> L[i] >> R[i];\n    \n    // BFS/DFS to find min swaps to reach any leaf\n    vector<int> dist(n + 1, 1e9);\n    dist[1] = 0;\n    queue<int> q;\n    q.push(1);\n    while (!q.empty()) {\n        int v = q.front(); q.pop();\n        if (L[v]) {\n            int cost = (s[v] != 'L') ? 1 : 0;\n            if (dist[v] + cost < dist[L[v]]) {\n                dist[L[v]] = dist[v] + cost;\n                q.push(L[v]);\n            }\n        }\n        if (R[v]) {\n            int cost = (s[v] != 'R') ? 1 : 0;\n            if (dist[v] + cost < dist[R[v]]) {\n                dist[R[v]] = dist[v] + cost;\n                q.push(R[v]);\n            }\n        }\n    }\n    int ans = 1e9;\n    for (int i = 1; i <= n; i++)\n        if (!L[i] && !R[i]) ans = min(ans, dist[i]);\n    cout << ans << \"\\n\";\n}\n```\n\nTree BFS. Time: O(n). Not a standard DS pattern."
+  },
+  {
+    "id": "CF-1986B",
+    "title": "Matrix Stabilization",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/130545",
+    "difficulty": "1100",
+    "author": "TheScrasse",
+    "date_published": "2024-06-29",
+    "editorial": "For each cell, check if it's strictly greater than all 4 neighbors. If so, replace it with the maximum neighbor value. This is a direct simulation — no advanced data structure needed.\n\n```cpp\nvoid solve() {\n    int n, m; cin >> n >> m;\n    vector<vector<int>> a(n, vector<int>(m));\n    for (auto& row : a) for (auto& x : row) cin >> x;\n    \n    int dx[] = {0,0,1,-1}, dy[] = {1,-1,0,0};\n    for (int i = 0; i < n; i++)\n        for (int j = 0; j < m; j++) {\n            int mx = 0;\n            for (int d = 0; d < 4; d++) {\n                int ni = i+dx[d], nj = j+dy[d];\n                if (ni >= 0 && ni < n && nj >= 0 && nj < m)\n                    mx = max(mx, a[ni][nj]);\n            }\n            if (a[i][j] > mx) a[i][j] = mx;\n        }\n    // output a\n}\n```\n\nSimple grid simulation. Time: O(nm). Not a standard pattern."
+  },
+  {
+    "id": "LC-2407",
+    "title": "Longest Increasing Subsequence II",
+    "source": "leetcode",
+    "url": "https://leetcode.com/problems/longest-increasing-subsequence-ii/",
+    "difficulty": "Hard",
+    "author": "leetcode-editorial",
+    "date_published": "2023-06-15",
+    "editorial": "Use a segment tree for range maximum queries. For each element nums[i], query the segment tree for the max LIS length in range [nums[i]-k, nums[i]-1], add 1, and update position nums[i].\n\n```cpp\nstruct SegTree {\n    int n;\n    vector<int> t;\n    SegTree(int n) : n(n), t(4*n, 0) {}\n    void update(int v, int tl, int tr, int pos, int val) {\n        if (tl == tr) { t[v] = max(t[v], val); return; }\n        int tm = (tl+tr)/2;\n        if (pos <= tm) update(2*v, tl, tm, pos, val);\n        else update(2*v+1, tm+1, tr, pos, val);\n        t[v] = max(t[2*v], t[2*v+1]);\n    }\n    int query(int v, int tl, int tr, int l, int r) {\n        if (l > r) return 0;\n        if (l == tl && r == tr) return t[v];\n        int tm = (tl+tr)/2;\n        return max(query(2*v, tl, tm, l, min(r,tm)),\n                   query(2*v+1, tm+1, tr, max(l,tm+1), r));\n    }\n};\n\nint lengthOfLIS(vector<int>& nums, int k) {\n    int mx = *max_element(nums.begin(), nums.end());\n    SegTree st(mx + 1);\n    int ans = 0;\n    for (int x : nums) {\n        int best = st.query(1, 0, mx, max(0, x-k), x-1);\n        ans = max(ans, best + 1);\n        st.update(1, 0, mx, x, best + 1);\n    }\n    return ans;\n}\n```\n\nSegment tree for dynamic range max query. Time: O(n log M) where M is max value. Space: O(M). This shows segment trees going beyond simple sum queries."
+  },
+  {
+    "id": "CF-1904B",
+    "title": "Collecting Game",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/123456",
+    "difficulty": "1400",
+    "author": "Vladosiya",
+    "date_published": "2023-12-01",
+    "editorial": "Sort the array and compute prefix sums. For each starting index, binary search for the furthest right index j such that prefix[j+1] - prefix[i] <= 2 * a[i]. The answer for the query on original index maps through the sorted permutation.\n\n```cpp\nvoid solve() {\n    int n; cin >> n;\n    vector<long long> a(n);\n    vector<int> idx(n);\n    for (int i = 0; i < n; i++) { cin >> a[i]; idx[i] = i; }\n    sort(idx.begin(), idx.end(), [&](int x, int y) { return a[x] < a[y]; });\n    sort(a.begin(), a.end());\n    \n    vector<long long> prefix(n + 1, 0);\n    for (int i = 0; i < n; i++) prefix[i+1] = prefix[i] + a[i];\n    \n    vector<int> ans(n);\n    for (int i = 0; i < n; i++) {\n        int lo = i, hi = n - 1, best = i;\n        while (lo <= hi) {\n            int mid = (lo + hi) / 2;\n            if (prefix[mid+1] - prefix[i] <= 2 * a[i]) {\n                best = mid;\n                lo = mid + 1;\n            } else hi = mid - 1;\n        }\n        ans[i] = best;\n    }\n    // map answers back through idx\n}\n```\n\nPrefix sums + binary search combo. Time: O(n log n). Space: O(n)."
+  },
+  {
+    "id": "LC-1851",
+    "title": "Minimum Interval to Include Each Query",
+    "source": "leetcode",
+    "url": "https://leetcode.com/problems/minimum-interval-to-include-each-query/",
+    "difficulty": "Hard",
+    "author": "leetcode-editorial",
+    "date_published": "2023-07-20",
+    "editorial": "Offline sweep with sorting. Sort intervals by size and queries by value. Use a sweep line approach — but for optimal per-query answers, a sparse table or segment tree on a coordinate-compressed axis works.\n\nAlternative: sort queries, sort intervals by left endpoint, use a priority queue to track active intervals by size.\n\n```cpp\nvector<int> minInterval(vector<vector<int>>& intervals, vector<int>& queries) {\n    int n = intervals.size(), q = queries.size();\n    sort(intervals.begin(), intervals.end());\n    vector<int> qi(q);\n    iota(qi.begin(), qi.end(), 0);\n    sort(qi.begin(), qi.end(), [&](int a, int b) { return queries[a] < queries[b]; });\n    \n    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;\n    vector<int> res(q, -1);\n    int j = 0;\n    for (int i : qi) {\n        while (j < n && intervals[j][0] <= queries[i]) {\n            int len = intervals[j][1] - intervals[j][0] + 1;\n            pq.push({len, intervals[j][1]});\n            j++;\n        }\n        while (!pq.empty() && pq.top().second < queries[i]) pq.pop();\n        if (!pq.empty()) res[i] = pq.top().first;\n    }\n    return res;\n}\n```\n\nSweep line + priority queue. Time: O((n+q) log n). An alternative approach uses a sparse table for static RMQ on the interval sizes."
+  },
+  {
+    "id": "CF-1903C",
+    "title": "Theofanis' Nightmare",
+    "source": "codeforces",
+    "url": "https://codeforces.com/blog/entry/123100",
+    "difficulty": "1400",
+    "author": "Kaey",
+    "date_published": "2023-11-22",
+    "editorial": "We want to partition the array into contiguous subarrays and maximize the sum of (coefficient * subarray_sum). The coefficient for the i-th subarray is i. \n\nKey insight: using prefix sums, suffix_sum[i] = prefix[n] - prefix[i]. We add suffix_sum[i] to our answer whenever starting a new subarray at position i is beneficial (i.e., suffix_sum[i] > 0).\n\n```cpp\nlong long solve(vector<int>& a) {\n    int n = a.size();\n    vector<long long> suffix(n + 1, 0);\n    for (int i = n - 1; i >= 0; i--)\n        suffix[i] = suffix[i + 1] + a[i];\n    \n    long long ans = suffix[0];  // must include first segment\n    for (int i = 1; i < n; i++)\n        if (suffix[i] > 0) ans += suffix[i];\n    return ans;\n}\n```\n\nPrefix/suffix sums with a greedy decision. Time: O(n). Space: O(n). The suffix sum tells us whether it's worth starting a new segment."
+  }
+]
