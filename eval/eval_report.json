@@ -1,0 +1,153 @@
+{
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "routing_accuracy": 1.0,
+    "pattern_recall": 1.0,
+    "code_hit_rate": 1.0,
+    "abstention_precision": 1.0,
+    "avg_score": 0.6393152793814464,
+    "avg_latency_ms": 27.145862579345703
+  },
+  "results": [
+    {
+      "query_id": "Q1",
+      "query": "How does a segment tree differ from a Fenwick tree for range queries?",
+      "expected_type": "graph_hop",
+      "actual_type": "graph_hop",
+      "routing_correct": true,
+      "patterns_found": [
+        "Fenwick Tree",
+        "Binary Search",
+        "Two Pointers",
+        "Greedy",
+        "Prefix Sum",
+        "Segment Tree"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.8224277633157643,
+      "retries": 0,
+      "latency_ms": 84.76805686950684,
+      "passed": true
+    },
+    {
+      "query_id": "Q2",
+      "query": "What do I need to know before learning suffix arrays?",
+      "expected_type": "graph_hop",
+      "actual_type": "graph_hop",
+      "routing_correct": true,
+      "patterns_found": [
+        "Binary Search",
+        "Suffix Array"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.9199999999999999,
+      "retries": 0,
+      "latency_ms": 9.330034255981445,
+      "passed": true
+    },
+    {
+      "query_id": "Q3",
+      "query": "Give me a C++ template for two-pointers on a sorted array",
+      "expected_type": "code_template",
+      "actual_type": "code_template",
+      "routing_correct": true,
+      "patterns_found": [
+        "Two Pointers",
+        "Greedy",
+        "Segment Tree"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "partial",
+      "score": 0.59,
+      "retries": 3,
+      "latency_ms": 42.231082916259766,
+      "passed": true
+    },
+    {
+      "query_id": "Q4",
+      "query": "What's the time complexity of a sparse table?",
+      "expected_type": "hybrid",
+      "actual_type": "hybrid",
+      "routing_correct": true,
+      "patterns_found": [
+        "Sparse Table",
+        "Unknown",
+        "Binary Search",
+        "Two Pointers",
+        "Greedy",
+        "Prefix Sum"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.6716269841269842,
+      "retries": 0,
+      "latency_ms": 8.951187133789062,
+      "passed": true
+    },
+    {
+      "query_id": "Q5",
+      "query": "Is a segment tree O(log n) or O(n log n) per query?",
+      "expected_type": "contradiction",
+      "actual_type": "contradiction",
+      "routing_correct": true,
+      "patterns_found": [
+        "Sweep Line",
+        "Sparse Table",
+        "Fenwick Tree",
+        "Two Pointers",
+        "Greedy",
+        "Priority Queue",
+        "Segment Tree"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.7818369288459297,
+      "retries": 0,
+      "latency_ms": 6.057977676391602,
+      "passed": true
+    },
+    {
+      "query_id": "Q6",
+      "query": "Explain the Aho-Corasick automaton for multi-pattern string matching",
+      "expected_type": "semantic",
+      "actual_type": "semantic",
+      "routing_correct": true,
+      "patterns_found": [
+        "Prefix Sum",
+        "BFS",
+        "Sliding Window",
+        "Two Pointers",
+        "Greedy",
+        "DFS"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "verdict": "abstain",
+      "score": 0.049999999999999996,
+      "retries": 1,
+      "latency_ms": 11.536836624145508,
+      "passed": true
+    }
+  ]
+}

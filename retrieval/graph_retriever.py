@@ -314,6 +314,106 @@ class GraphRetriever:
             )
 
 
+class InMemoryGraphRetriever:
+    """In-memory fallback graph retriever when Neo4j is offline."""
+
+    def __init__(self):
+        from ingestion.load_graph import (
+            PATTERNS, PREREQUISITE_EDGES, ALTERNATIVE_EDGES, CODE_TEMPLATES
+        )
+        self.patterns = {p["name"]: PatternInfo(**p) for p in PATTERNS}
+        self.prereqs = list(PREREQUISITE_EDGES)
+        self.alternatives = list(ALTERNATIVE_EDGES)
+        self.templates = {
+            t["pattern"]: TemplateInfo(
+                pattern=t["pattern"],
+                code=t["code"],
+                explanation=t["explanation"],
+                source_url="https://cp-algorithms.com",
+            )
+            for t in CODE_TEMPLATES
+        }
+
+    def close(self):
+        pass
+
+    def compare_patterns(self, pattern_a: str, pattern_b: str) -> Optional[ComparisonResult]:
+        pa = self.patterns.get(pattern_a)
+        pb = self.patterns.get(pattern_b)
+        if not pa or not pb:
+            return None
+        tradeoff = ""
+        for a, b, desc in self.alternatives:
+            if (a == pattern_a and b == pattern_b) or (a == pattern_b and b == pattern_a):
+                tradeoff = desc
+                break
+        tmpls = []
+        if pattern_a in self.templates:
+            tmpls.append(self.templates[pattern_a])
+        if pattern_b in self.templates:
+            tmpls.append(self.templates[pattern_b])
+        return ComparisonResult(
+            pattern_a=pa,
+            pattern_b=pb,
+            relationship_type="ALTERNATIVE_TO" if tradeoff else "RELATED",
+            tradeoff=tradeoff or f"Tradeoffs between {pattern_a} and {pattern_b}",
+            templates=tmpls,
+        )
+
+    def prerequisite_chain(self, target_pattern: str) -> Optional[PrerequisiteChain]:
+        if target_pattern not in self.patterns:
+            return None
+        chain_names = []
+        visited = set()
+        def dfs(curr):
+            if curr in visited:
+                return
+            visited.add(curr)
+            for src, dst in self.prereqs:
+                if dst == curr:
+                    dfs(src)
+            chain_names.append(curr)
+        dfs(target_pattern)
+        chain = [self.patterns[name] for name in chain_names if name in self.patterns]
+        return PrerequisiteChain(
+            target=target_pattern,
+            chain=chain,
+            depth=max(0, len(chain) - 1),
+        )
+
+    def pattern_complexity(self, pattern_name: str) -> Optional[ComplexityResult]:
+        p = self.patterns.get(pattern_name)
+        if not p:
+            for name, info in self.patterns.items():
+                if pattern_name.lower() in name.lower():
+                    p = info
+                    break
+        if not p:
+            return None
+        return ComplexityResult(
+            pattern=p,
+            time_complexity=p.time_complexity,
+            space_complexity=p.space_complexity,
+        )
+
+    def get_neighbors(self, pattern_name: str, rel_type: str | None = None) -> list[dict]:
+        neighbors = []
+        for src, dst in self.prereqs:
+            if src == pattern_name:
+                neighbors.append({"name": dst, "relationship": "PREREQUISITE_OF", "rel_props": {}})
+            elif dst == pattern_name:
+                neighbors.append({"name": src, "relationship": "PREREQUISITE_FOR", "rel_props": {}})
+        for a, b, desc in self.alternatives:
+            if a == pattern_name:
+                neighbors.append({"name": b, "relationship": "ALTERNATIVE_TO", "rel_props": {"tradeoff": desc}})
+            elif b == pattern_name:
+                neighbors.append({"name": a, "relationship": "ALTERNATIVE_TO", "rel_props": {"tradeoff": desc}})
+        return neighbors
+
+    def get_template(self, pattern_name: str) -> Optional[TemplateInfo]:
+        return self.templates.get(pattern_name)
+
+
 # ---------------------------------------------------------------------------
 # CLI demo
 # ---------------------------------------------------------------------------

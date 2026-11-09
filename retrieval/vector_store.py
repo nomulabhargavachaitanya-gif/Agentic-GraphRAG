@@ -50,6 +50,16 @@ class ChunkMetadata:
     source_url: str = ""
     text: str = ""            # the original text (for retrieval display)
 
+ChunkMetadata.__module__ = "retrieval.vector_store"
+
+
+class _MetadataUnpickler(pickle.Unpickler):
+    """Custom unpickler to robustly load ChunkMetadata regardless of __main__ context."""
+    def find_class(self, module, name):
+        if name == "ChunkMetadata":
+            return ChunkMetadata
+        return super().find_class(module, name)
+
 
 @dataclass
 class SearchResult:
@@ -298,7 +308,7 @@ class VectorStore:
 
         self.index = faiss.read_index(str(path / "index.faiss"))
         with open(path / "metadata.pkl", "rb") as f:
-            self.metadata = pickle.load(f)
+            self.metadata = _MetadataUnpickler(f).load()
         print(f"  ✓ Loaded vector store from {path} ({self.size} vectors)")
 
 
