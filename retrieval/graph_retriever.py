@@ -291,7 +291,7 @@ class GraphRetriever:
             return [dict(record) for record in result]
 
     def get_template(self, pattern_name: str) -> Optional[TemplateInfo]:
-        """Get the C++ template for a pattern."""
+        """Get the primary C++ template for a pattern (prefers canonical/longest)."""
         with self.driver.session() as session:
             result = session.run(
                 """
@@ -299,7 +299,11 @@ class GraphRetriever:
                 OPTIONAL MATCH (ct)-[:EXTRACTED_FROM]->(s:Source)
                 RETURN ct.code AS code,
                        ct.annotated_explanation AS explanation,
-                       s.url AS source_url
+                       s.url AS source_url,
+                       s.platform AS platform
+                ORDER BY CASE WHEN s.platform = 'cp-algorithms' THEN 0 ELSE 1 END,
+                         size(ct.code) DESC
+                LIMIT 1
                 """,
                 name=pattern_name,
             )

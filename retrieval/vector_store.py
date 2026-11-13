@@ -84,7 +84,10 @@ class VectorStore:
 
         self.model_name = model_name
         self.model: SentenceTransformer = SentenceTransformer(model_name)
-        self.dimension: int = self.model.get_sentence_embedding_dimension()
+        if hasattr(self.model, "get_embedding_dimension"):
+            self.dimension: int = self.model.get_embedding_dimension()
+        else:
+            self.dimension = self.model.get_sentence_embedding_dimension()
         self.index: faiss.IndexFlatL2 = faiss.IndexFlatL2(self.dimension)
         self.metadata: list[ChunkMetadata] = []
 
@@ -246,9 +249,8 @@ class VectorStore:
 
         query_vec = self.embed_single(query).reshape(1, -1)
 
-        # If filtering, search more candidates then filter
-        search_k = k * 5 if (pattern_filter or chunk_type) else k
-        search_k = min(search_k, self.size)
+        # If filtering, search all candidates in the store then filter
+        search_k = self.size if (pattern_filter or chunk_type) else min(k, self.size)
 
         distances, indices = self.index.search(query_vec, search_k)
 

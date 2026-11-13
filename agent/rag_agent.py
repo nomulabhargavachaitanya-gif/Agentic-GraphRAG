@@ -30,6 +30,7 @@ from retrieval.query_router import QueryRouter, QueryType
 from retrieval.hybrid_retriever import HybridRetriever, HybridRetrievalResult, RetrievedContext
 
 from llm import gemini
+from agent.contradiction import ContradictionDetector
 
 
 # ── Configuration ────────────────────────────────────────────────────────
@@ -107,7 +108,20 @@ class ContextGrader:
             )
 
         q_lower = query.lower()
-        q_words = set(q_lower.split())
+        import re as _re
+        _stop = {
+            "what", "is", "are", "the", "a", "an", "for", "of", "in", "on", "to",
+            "how", "does", "do", "i", "need", "should", "learn", "before", "know",
+            "explain", "give", "me", "show", "compare", "between", "from", "with",
+            "and", "or", "by", "this", "these", "used", "work", "can", "which",
+        }
+        q_tokens = [w for w in _re.findall(r"[a-z0-9\+]+", q_lower) if len(w) > 1]
+        q_words = set(q_tokens)
+        q_content_words = {w for w in q_words if w not in _stop} or q_words
+
+        expected_patterns = set()
+        if routing_decision and routing_decision.detected_patterns:
+            expected_patterns = set(routing_decision.detected_patterns)
 
         relevant_chunks = 0
         has_code = False
@@ -117,16 +131,32 @@ class ContextGrader:
         for ctx in contexts:
             # Check if context text overlaps with query keywords
             ctx_lower = ctx.text.lower()
-            ctx_words = set(ctx_lower.split())
+            ctx_words = set(_re.findall(r"[a-z0-9\+]+", ctx_lower))
             word_overlap = len(q_words & ctx_words) / max(len(q_words), 1)
+            content_overlap = len(q_content_words & ctx_words) / max(len(q_content_words), 1)
 
             # Check if any detected patterns appear in the context
-            pattern_match = any(
-                pid.lower() in ctx_lower for pid in ctx.pattern_ids
-            ) if ctx.pattern_ids else False
+            pattern_match = (
+                bool(set(ctx.pattern_ids) & expected_patterns)
+                if expected_patterns
+                else any(pid.lower() in ctx_lower for pid in ctx.pattern_ids)
+            )
 
-            # Score this chunk
-            chunk_relevance = min(1.0, ctx.relevance_score * 0.5 + word_overlap * 0.3 + (0.2 if pattern_match else 0.0))
+            # For pure semantic queries (no known patterns detected), require
+            # either strong vector similarity (>=0.55) or meaningful content-word
+            # overlap so out-of-corpus topics don't pass on background similarity.
+            if not expected_patterns and ctx.source_type != "graph":
+                if ctx.relevance_score < 0.55 and content_overlap == 0.0:
+                    chunk_relevance = ctx.relevance_score * 0.4
+                else:
+                    chunk_relevance = min(1.0, ctx.relevance_score * 0.5 + content_overlap * 0.4)
+            else:
+                chunk_relevance = min(
+                    1.0,
+                    ctx.relevance_score * 0.5
+                    + word_overlap * 0.3
+                    + (0.2 if pattern_match else 0.0),
+                )
             relevance_scores.append(chunk_relevance)
 
             if chunk_relevance >= RELEVANCE_THRESHOLD:
@@ -142,10 +172,6 @@ class ContextGrader:
         sufficiency = min(1.0, relevant_chunks / max(1, min(3, len(contexts))))
 
         # Coverage: how many of the query's detected patterns are represented?
-        expected_patterns = set()
-        if routing_decision and routing_decision.detected_patterns:
-            expected_patterns = set(routing_decision.detected_patterns)
-
         if expected_patterns:
             found_patterns = set()
             for ctx in contexts:
@@ -204,6 +230,7 @@ class AnswerSynthesizer:
         contexts: list[RetrievedContext],
         grading: GradingResult,
         routing_decision=None,
+        contradiction_report=None,
     ) -> str:
         """Generate a final answer from the retrieved and graded contexts."""
         # Abstention
@@ -214,11 +241,18 @@ class AnswerSynthesizer:
         context_block = self._format_contexts(contexts, grading)
 
         # LLM synthesis
+        cx_md = contradiction_report.to_markdown() if contradiction_report else ""
+        if cx_md:
+            context_block += "\n\nContradiction analysis (automated):\n" + cx_md
+
         if self.has_llm:
             return self._llm_synthesize(query, context_block, routing_decision)
 
         # Structured fallback
-        return self._structured_response(query, contexts, grading, routing_decision)
+        out = self._structured_response(query, contexts, grading, routing_decision)
+        if cx_md:
+            out = "### Contradiction Analysis\n\n" + cx_md + "\n\n" + out
+        return out
 
     def _abstention_response(self, query: str) -> str:
         return (
@@ -260,7 +294,10 @@ class AnswerSynthesizer:
             "3. Cite patterns and sources explicitly.\n"
             "4. For code templates, preserve them exactly as retrieved.\n"
             "5. If complexities are mentioned, state them precisely.\n"
-            "6. Never fabricate algorithms, complexities, or code not in context."
+            "6. Never fabricate algorithms, complexities, or code not in context.\n"
+            "7. If a 'Contradiction analysis' section is present, present each "
+            "conflicting claim with its source, then say which claim the context "
+            "supports (prefer the canonical graph value) and why."
         )
 
         user_prompt = (
@@ -337,6 +374,7 @@ class RAGAgent:
         self.retriever = hybrid_retriever or HybridRetriever()
         self.grader = grader or ContextGrader()
         self.synthesizer = synthesizer or AnswerSynthesizer()
+        self.contradiction_detector = ContradictionDetector()
 
     def query(self, question: str, k: int = 5, verbose: bool = False) -> AgentResponse:
         """
@@ -386,6 +424,9 @@ class RAGAgent:
                 # Already retried once with wider search — give up
                 break
 
+            if retries >= MAX_RETRIES:
+                break
+
             # Step 4: Self-correct — widen the search
             retries += 1
             current_k = min(current_k * 2, 20)  # double k, cap at 20
@@ -399,13 +440,20 @@ class RAGAgent:
 
         # Step 5: Synthesize answer
         is_abstention = best_grading.verdict == "abstain"
-        is_contradiction = best_result.routing.query_type == QueryType.CONTRADICTION
+        contradiction_report = None
+        if best_result.routing.query_type == QueryType.CONTRADICTION and not is_abstention:
+            target = best_result.routing.target_pattern or (
+                best_result.routing.detected_patterns[0]
+                if best_result.routing.detected_patterns else None)
+            contradiction_report = self.contradiction_detector.detect(target, best_result.contexts)
+        is_contradiction = bool(contradiction_report and contradiction_report.detected)
 
         answer = self.synthesizer.synthesize(
             question,
             best_result.contexts,
             best_grading,
             best_result.routing,
+            contradiction_report=contradiction_report,
         )
 
         # Build source attribution
@@ -437,6 +485,7 @@ class RAGAgent:
                     "confidence": best_result.routing.confidence,
                     "detected_patterns": best_result.routing.detected_patterns,
                 },
+                "contradiction": contradiction_report,
             },
         )
 

@@ -22,6 +22,14 @@ from retrieval.query_router import QueryRouter, QueryType, RoutingDecision
 from retrieval.vector_retriever import VectorRetriever, VectorRetrievalResult
 
 
+def _l2_to_similarity(dist: float) -> float:
+    """Convert squared L2 distance on unit-normalised vectors to [0, 1] similarity.
+
+    For unit vectors ||u - v||^2 = 2(1 - cos(u, v)), so cos = 1 - dist / 2.
+    """
+    return max(0.0, min(1.0, 1.0 - dist / 2.0))
+
+
 # ── Result Types ─────────────────────────────────────────────────────────
 
 @dataclass
@@ -291,7 +299,7 @@ class HybridRetriever:
                 contexts.append(RetrievedContext(
                     text=r.text,
                     source_type="vector_code",
-                    relevance_score=max(0.0, 1.0 - r.score),  # L2 → similarity
+                    relevance_score=_l2_to_similarity(r.score),
                     pattern_ids=r.metadata.pattern_ids,
                     source_url=r.metadata.source_url,
                     metadata={"editorial_id": r.metadata.editorial_id},
@@ -306,8 +314,10 @@ class HybridRetriever:
                 contexts.append(RetrievedContext(
                     text=r.text,
                     source_type="vector_prose",
-                    relevance_score=max(0.0, 1.0 - r.score),
+                    relevance_score=_l2_to_similarity(r.score),
                     pattern_ids=r.metadata.pattern_ids,
+                    source_url=r.metadata.source_url,
+                    metadata={"editorial_id": r.metadata.editorial_id},
                 ))
 
         return HybridRetrievalResult(
@@ -355,7 +365,7 @@ class HybridRetriever:
                 contexts.append(RetrievedContext(
                     text=r.text,
                     source_type=f"vector_{r.metadata.chunk_type}",
-                    relevance_score=max(0.0, 1.0 - r.score),
+                    relevance_score=_l2_to_similarity(r.score),
                     pattern_ids=r.metadata.pattern_ids,
                     source_url=r.metadata.source_url,
                     metadata={"editorial_id": r.metadata.editorial_id},
@@ -428,7 +438,7 @@ class HybridRetriever:
                 contexts.append(RetrievedContext(
                     text=r.text,
                     source_type=f"vector_{r.metadata.chunk_type}",
-                    relevance_score=max(0.0, 1.0 - r.score),
+                    relevance_score=_l2_to_similarity(r.score),
                     pattern_ids=r.metadata.pattern_ids,
                     source_url=r.metadata.source_url,
                     metadata={
@@ -482,7 +492,7 @@ class HybridRetriever:
             contexts.append(RetrievedContext(
                 text=r.text,
                 source_type=f"vector_{r.metadata.chunk_type}",
-                relevance_score=max(0.0, 1.0 - r.score),
+                relevance_score=_l2_to_similarity(r.score),
                 pattern_ids=r.metadata.pattern_ids,
                 source_url=r.metadata.source_url,
                 metadata={"editorial_id": r.metadata.editorial_id},
