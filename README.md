@@ -180,8 +180,6 @@ rag_project/
 │   └── vector_index/          ← persisted FAISS index
 ├── docker-compose.yml
 ├── requirements.txt
-├── PROJECT_MASTER_GUIDE.md    ← complete architecture reference
-├── PROJECT_EXPLANATION.pdf    ← typeset documentation
 └── README.md
 ```
 

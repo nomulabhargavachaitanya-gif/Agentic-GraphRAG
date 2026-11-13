@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import pickle
+from dataclasses import asdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -296,7 +297,7 @@ class VectorStore:
 
         faiss.write_index(self.index, str(path / "index.faiss"))
         with open(path / "metadata.pkl", "wb") as f:
-            pickle.dump(self.metadata, f)
+            pickle.dump([asdict(m) for m in self.metadata], f)
         with open(path / "config.json", "w") as f:
             json.dump({"model_name": self.model_name, "dimension": self.dimension}, f)
 
@@ -308,7 +309,7 @@ class VectorStore:
 
         self.index = faiss.read_index(str(path / "index.faiss"))
         with open(path / "metadata.pkl", "rb") as f:
-            self.metadata = _MetadataUnpickler(f).load()
+            self.metadata = [ChunkMetadata(**d) for d in pickle.load(f)]
         print(f"  ✓ Loaded vector store from {path} ({self.size} vectors)")
 
 
