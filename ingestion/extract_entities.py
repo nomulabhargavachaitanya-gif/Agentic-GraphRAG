@@ -335,6 +335,14 @@ def _parse_extraction_json(
         for t in data.get("code_templates", [])
     ]
 
+    for p in patterns:
+        p.name = normalize_pattern_name(p.name)
+    for r in relationships:
+        r.from_pattern = normalize_pattern_name(r.from_pattern)
+        r.to_pattern = normalize_pattern_name(r.to_pattern)
+    for t in templates:
+        t.pattern = normalize_pattern_name(t.pattern)
+
     return ExtractionResult(
         editorial_id=editorial_id,
         patterns=patterns,
@@ -347,6 +355,23 @@ def _parse_extraction_json(
 
 # ── Deduplication ────────────────────────────────────────────────────────
 
+_ACRONYMS = {"bfs": "BFS", "dfs": "DFS", "dp": "Dynamic Programming", "bit": "Fenwick Tree",
+             "lca": "LCA", "dsu": "DSU", "mst": "MST", "fft": "FFT"}
+
+
+def normalize_pattern_name(name: str) -> str:
+    """Canonical display name: title-case, but keep acronyms upper-case."""
+    name = name.strip()
+    low = name.lower()
+    if low in _ACRONYMS:
+        return _ACRONYMS[low]
+    # singular/plural variants of common names
+    if low in ("two pointer", "two-pointer", "two pointers"):
+        return "Two Pointers"
+    return " ".join(_ACRONYMS.get(w.lower(), w.capitalize()) if w.lower() in _ACRONYMS
+                    else w.capitalize() for w in name.split())
+
+
 def deduplicate_patterns(results: list[ExtractionResult]) -> dict[str, ExtractedPattern]:
     """
     Deduplicate patterns across multiple extraction results.
@@ -358,7 +383,7 @@ def deduplicate_patterns(results: list[ExtractionResult]) -> dict[str, Extracted
     # Normalize: strip whitespace, title-case
     for result in results:
         for pattern in result.patterns:
-            key = pattern.name.strip().title()
+            key = normalize_pattern_name(pattern.name)
             # Keep the pattern with the most informative description
             if key not in seen or len(pattern.description) > len(seen[key].description):
                 pattern.name = key

@@ -78,6 +78,11 @@ PATTERN_ALIASES: dict[str, str] = {
     "topological sort": "Topological Sort",
     "monotonic stack": "Monotonic Stack",
     "monotonic queue": "Monotonic Queue",
+    "greedy": "Greedy",
+    "priority queue": "Priority Queue",
+    "sweep line": "Sweep Line",
+    "grid simulation": "Grid Simulation",
+    "two pointer": "Two Pointers",
 }
 
 
@@ -88,7 +93,8 @@ GRAPH_HOP_KEYWORDS = {
     "depend", "dependency", "dependencies", "learning path", "learning order",
     "difference between", "differ", "compare", "comparison", "versus", "vs",
     "tradeoff", "trade-off", "trade off", "alternative",
-    "related to", "neighbor", "neighbours", "neighbors",
+    "learn before", "should learn", "need to learn", "required before",
+    "learn first", "related to", "neighbor", "neighbours", "neighbors",
 }
 
 CODE_TEMPLATE_KEYWORDS = {
@@ -169,7 +175,10 @@ class QueryRouter:
             # Prerequisite chain query
             if self._has_keywords(q_lower, {"prerequisite", "before learning",
                                             "need to know", "learning path",
-                                            "learning order", "depend"}):
+                                            "learning order", "depend",
+                                            "learn before", "should learn",
+                                            "need to learn", "required before",
+                                            "learn first"}):
                 target = detected[-1] if detected else None
                 return RoutingDecision(
                     query=query,

@@ -5,11 +5,15 @@
       "query": "How does a segment tree differ from a Fenwick tree for range queries?",
       "type": "graph-hop",
       "expected_retrieval": {
-        "patterns": ["Segment Tree", "Fenwick Tree"],
+        "patterns": [
+          "Segment Tree",
+          "Fenwick Tree"
+        ],
         "edge_type": "ALTERNATIVE_TO",
         "should_return_templates": true
       },
-      "expected_behavior": "Returns both patterns, the ALTERNATIVE_TO tradeoff, and both C++ templates."
+      "expected_behavior": "Returns both patterns, the ALTERNATIVE_TO tradeoff, and both C++ templates.",
+      "expected_route": "graph_hop"
     },
     {
       "id": "Q2",
@@ -17,10 +21,14 @@
       "type": "graph-hop",
       "expected_retrieval": {
         "target_pattern": "Suffix Array",
-        "expected_prerequisite_chain": ["Binary Search", "Suffix Array"],
+        "expected_prerequisite_chain": [
+          "Binary Search",
+          "Suffix Array"
+        ],
         "edge_type": "PREREQUISITE_OF"
       },
-      "expected_behavior": "Returns the transitive prerequisite chain: Binary Search → Suffix Array."
+      "expected_behavior": "Returns the transitive prerequisite chain: Binary Search \u2192 Suffix Array.",
+      "expected_route": "graph_hop"
     },
     {
       "id": "Q3",
@@ -31,7 +39,8 @@
         "should_return_template": true
       },
       "expected_behavior": "Returns the Two Pointers C++ template with explanation.",
-      "phase": "4+"
+      "phase": "4+",
+      "expected_route": "code_template"
     },
     {
       "id": "Q4",
@@ -42,7 +51,8 @@
         "time_complexity": "O(n log n) build, O(1) query",
         "space_complexity": "O(n log n)"
       },
-      "expected_behavior": "Returns the Sparse Table pattern with its complexity properties."
+      "expected_behavior": "Returns the Sparse Table pattern with its complexity properties.",
+      "expected_route": "hybrid"
     },
     {
       "id": "Q5",
@@ -52,7 +62,8 @@
         "note": "Requires two ingested sources that claim different complexities for Segment Tree queries."
       },
       "expected_behavior": "Triggers the contradiction path, surfacing both claims with source attribution.",
-      "phase": "6+"
+      "phase": "6+",
+      "expected_route": "contradiction"
     },
     {
       "id": "Q6",
@@ -62,7 +73,259 @@
         "note": "Aho-Corasick is NOT in the ingested corpus."
       },
       "expected_behavior": "Should ABSTAIN: return 'I don't have enough grounded information' rather than hallucinate.",
-      "phase": "5+"
+      "phase": "5+",
+      "expected_route": "semantic"
+    },
+    {
+      "id": "Q7",
+      "query": "What should I learn before Fenwick trees?",
+      "type": "graph-hop",
+      "expected_route": "graph_hop",
+      "expected_retrieval": {
+        "patterns": [
+          "Prefix Sum",
+          "Fenwick Tree"
+        ]
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q8",
+      "query": "Compare sparse table and segment tree for range minimum queries",
+      "type": "graph-hop",
+      "expected_route": "graph_hop",
+      "expected_retrieval": {
+        "patterns": [
+          "Sparse Table",
+          "Segment Tree"
+        ]
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q9",
+      "query": "Is prefix sum a prerequisite for sliding window?",
+      "type": "graph-hop",
+      "expected_route": "graph_hop",
+      "expected_retrieval": {
+        "patterns": [
+          "Prefix Sum",
+          "Sliding Window"
+        ]
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q10",
+      "query": "What are the alternatives to a Fenwick tree?",
+      "type": "graph-hop",
+      "expected_route": "graph_hop",
+      "expected_retrieval": {
+        "patterns": [
+          "Fenwick Tree"
+        ]
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q11",
+      "query": "Which patterns are related to binary search?",
+      "type": "graph-hop",
+      "expected_route": "graph_hop",
+      "expected_retrieval": {
+        "patterns": [
+          "Binary Search"
+        ]
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q12",
+      "query": "Give me a C++ template for binary search",
+      "type": "hybrid",
+      "expected_route": "code_template",
+      "expected_retrieval": {
+        "pattern": "Binary Search",
+        "should_return_template": true
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q13",
+      "query": "Show C++ code for a segment tree",
+      "type": "hybrid",
+      "expected_route": "code_template",
+      "expected_retrieval": {
+        "pattern": "Segment Tree",
+        "should_return_template": true
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q14",
+      "query": "C++ implementation of sliding window",
+      "type": "hybrid",
+      "expected_route": "code_template",
+      "expected_retrieval": {
+        "pattern": "Sliding Window",
+        "should_return_template": true
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q15",
+      "query": "Give me a code template for prefix sum",
+      "type": "hybrid",
+      "expected_route": "code_template",
+      "expected_retrieval": {
+        "pattern": "Prefix Sum",
+        "should_return_template": true
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q16",
+      "query": "Show me a Fenwick tree C++ template",
+      "type": "hybrid",
+      "expected_route": "code_template",
+      "expected_retrieval": {
+        "pattern": "Fenwick Tree",
+        "should_return_template": true
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q17",
+      "query": "Give me a C++ template for BFS",
+      "type": "hybrid",
+      "expected_route": "code_template",
+      "expected_retrieval": {
+        "pattern": "BFS",
+        "should_return_template": true
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q18",
+      "query": "What is the time complexity of a Fenwick tree?",
+      "type": "semantic+graph",
+      "expected_route": "hybrid",
+      "expected_retrieval": {
+        "pattern": "Fenwick Tree"
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q19",
+      "query": "What is the time complexity of binary search?",
+      "type": "semantic+graph",
+      "expected_route": "hybrid",
+      "expected_retrieval": {
+        "pattern": "Binary Search"
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q20",
+      "query": "What is the space complexity of a segment tree?",
+      "type": "semantic+graph",
+      "expected_route": "hybrid",
+      "expected_retrieval": {
+        "pattern": "Segment Tree"
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q21",
+      "query": "What is the time complexity of the two pointers technique?",
+      "type": "semantic+graph",
+      "expected_route": "hybrid",
+      "expected_retrieval": {
+        "pattern": "Two Pointers"
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q22",
+      "query": "Explain the sliding window technique",
+      "type": "semantic",
+      "expected_route": "hybrid",
+      "expected_retrieval": {
+        "pattern": "Sliding Window"
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q23",
+      "query": "How does a Fenwick tree support point updates?",
+      "type": "semantic",
+      "expected_route": "hybrid",
+      "expected_retrieval": {
+        "pattern": "Fenwick Tree"
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q24",
+      "query": "Explain how greedy algorithms are used in these editorials",
+      "type": "semantic",
+      "expected_route": "hybrid",
+      "expected_retrieval": {
+        "pattern": "Greedy"
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q25",
+      "query": "Is a Fenwick tree O(log n) or O(n) per update?",
+      "type": "contradiction",
+      "expected_route": "contradiction",
+      "expected_retrieval": {
+        "pattern": "Fenwick Tree"
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q26",
+      "query": "Which is correct: binary search O(log n) or O(n)?",
+      "type": "contradiction",
+      "expected_route": "contradiction",
+      "expected_retrieval": {
+        "pattern": "Binary Search"
+      },
+      "expected_behavior": "Grounded answer using retrieved context."
+    },
+    {
+      "id": "Q27",
+      "query": "Explain the Aho-Corasick automaton",
+      "type": "out-of-corpus",
+      "expected_route": "semantic",
+      "expected_retrieval": {},
+      "expected_behavior": "Out-of-corpus: must abstain."
+    },
+    {
+      "id": "Q28",
+      "query": "How does max flow with Dinic's algorithm work?",
+      "type": "out-of-corpus",
+      "expected_route": "semantic",
+      "expected_retrieval": {},
+      "expected_behavior": "Out-of-corpus: must abstain."
+    },
+    {
+      "id": "Q29",
+      "query": "Explain the Fast Fourier Transform for polynomial multiplication",
+      "type": "out-of-corpus",
+      "expected_route": "semantic",
+      "expected_retrieval": {},
+      "expected_behavior": "Out-of-corpus: must abstain."
+    },
+    {
+      "id": "Q30",
+      "query": "What is Mo's algorithm?",
+      "type": "out-of-corpus",
+      "expected_route": "semantic",
+      "expected_retrieval": {},
+      "expected_behavior": "Out-of-corpus: must abstain."
     }
   ]
 }

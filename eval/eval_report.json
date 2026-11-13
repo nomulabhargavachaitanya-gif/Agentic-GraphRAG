@@ -1,14 +1,14 @@
 {
   "summary": {
-    "total": 6,
-    "passed": 6,
+    "total": 30,
+    "passed": 30,
     "failed": 0,
     "routing_accuracy": 1.0,
     "pattern_recall": 1.0,
     "code_hit_rate": 1.0,
     "abstention_precision": 1.0,
-    "avg_score": 0.6667225336191609,
-    "avg_latency_ms": 1141.221523284912
+    "avg_score": 0.5957489206506916,
+    "avg_latency_ms": 2203.0487378438315
   },
   "results": [
     {
@@ -18,12 +18,12 @@
       "actual_type": "graph_hop",
       "routing_correct": true,
       "patterns_found": [
-        "Binary Search",
-        "Prefix Sum",
-        "Greedy",
-        "Segment Tree",
         "Fenwick Tree",
-        "Two Pointers"
+        "Segment Tree",
+        "Two Pointers",
+        "Prefix Sum",
+        "Binary Search",
+        "Greedy"
       ],
       "pattern_recall": 1.0,
       "has_code": true,
@@ -32,7 +32,7 @@
       "verdict": "sufficient",
       "score": 0.8574497191500274,
       "retries": 0,
-      "latency_ms": 1812.4220371246338,
+      "latency_ms": 2351.8030643463135,
       "passed": true
     },
     {
@@ -42,10 +42,10 @@
       "actual_type": "graph_hop",
       "routing_correct": true,
       "patterns_found": [
-        "Prefix Sum",
         "Binary Search",
-        "Suffix Array",
-        "Greedy"
+        "Prefix Sum",
+        "Greedy",
+        "Suffix Array"
       ],
       "pattern_recall": 1.0,
       "has_code": false,
@@ -54,7 +54,7 @@
       "verdict": "sufficient",
       "score": 0.9199999999999999,
       "retries": 0,
-      "latency_ms": 1056.326150894165,
+      "latency_ms": 2232.8341007232666,
       "passed": true
     },
     {
@@ -65,8 +65,8 @@
       "routing_correct": true,
       "patterns_found": [
         "Segment Tree",
-        "Greedy",
-        "Two Pointers"
+        "Two Pointers",
+        "Greedy"
       ],
       "pattern_recall": 1.0,
       "has_code": true,
@@ -75,7 +75,7 @@
       "verdict": "partial",
       "score": 0.5866666666666667,
       "retries": 3,
-      "latency_ms": 2006.7908763885498,
+      "latency_ms": 1898.0131149291992,
       "passed": true
     },
     {
@@ -85,12 +85,12 @@
       "actual_type": "hybrid",
       "routing_correct": true,
       "patterns_found": [
-        "Binary Search",
-        "Prefix Sum",
-        "Greedy",
-        "Sparse Table",
         "Grid Simulation",
-        "Two Pointers"
+        "Two Pointers",
+        "Sparse Table",
+        "Prefix Sum",
+        "Binary Search",
+        "Greedy"
       ],
       "pattern_recall": 1.0,
       "has_code": false,
@@ -99,7 +99,7 @@
       "verdict": "sufficient",
       "score": 0.8052083333333333,
       "retries": 0,
-      "latency_ms": 724.581241607666,
+      "latency_ms": 1107.03706741333,
       "passed": true
     },
     {
@@ -110,12 +110,12 @@
       "routing_correct": true,
       "patterns_found": [
         "Priority Queue",
-        "Greedy",
-        "Sparse Table",
-        "Segment Tree",
-        "Sweep Line",
         "Fenwick Tree",
-        "Two Pointers"
+        "Segment Tree",
+        "Two Pointers",
+        "Sparse Table",
+        "Sweep Line",
+        "Greedy"
       ],
       "pattern_recall": 1.0,
       "has_code": true,
@@ -124,7 +124,7 @@
       "verdict": "sufficient",
       "score": 0.781010482564938,
       "retries": 0,
-      "latency_ms": 1215.6479358673096,
+      "latency_ms": 1087.7208709716797,
       "passed": true
     },
     {
@@ -134,12 +134,12 @@
       "actual_type": "semantic",
       "routing_correct": true,
       "patterns_found": [
-        "Prefix Sum",
-        "BFS",
-        "Greedy",
         "Sliding Window",
         "DFS",
-        "Two Pointers"
+        "Two Pointers",
+        "Greedy",
+        "Prefix Sum",
+        "BFS"
       ],
       "pattern_recall": 1.0,
       "has_code": false,
@@ -148,7 +148,552 @@
       "verdict": "abstain",
       "score": 0.049999999999999996,
       "retries": 1,
-      "latency_ms": 31.560897827148438,
+      "latency_ms": 28.616905212402344,
+      "passed": true
+    },
+    {
+      "query_id": "Q7",
+      "query": "What should I learn before Fenwick trees?",
+      "expected_type": "graph_hop",
+      "actual_type": "graph_hop",
+      "routing_correct": true,
+      "patterns_found": [
+        "Binary Search",
+        "Prefix Sum",
+        "Segment Tree",
+        "Fenwick Tree"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "partial",
+      "score": 0.5444444444444444,
+      "retries": 3,
+      "latency_ms": 894.5109844207764,
+      "passed": true
+    },
+    {
+      "query_id": "Q8",
+      "query": "Compare sparse table and segment tree for range minimum queries",
+      "expected_type": "graph_hop",
+      "actual_type": "graph_hop",
+      "routing_correct": true,
+      "patterns_found": [
+        "Priority Queue",
+        "Fenwick Tree",
+        "Segment Tree",
+        "Sparse Table",
+        "Sweep Line",
+        "Greedy"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.8667958763873939,
+      "retries": 0,
+      "latency_ms": 1661.623239517212,
+      "passed": true
+    },
+    {
+      "query_id": "Q9",
+      "query": "Is prefix sum a prerequisite for sliding window?",
+      "expected_type": "graph_hop",
+      "actual_type": "graph_hop",
+      "routing_correct": true,
+      "patterns_found": [
+        "Sliding Window",
+        "Greedy",
+        "Prefix Sum"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.8787317874530952,
+      "retries": 0,
+      "latency_ms": 1073.246955871582,
+      "passed": true
+    },
+    {
+      "query_id": "Q10",
+      "query": "What are the alternatives to a Fenwick tree?",
+      "expected_type": "graph_hop",
+      "actual_type": "graph_hop",
+      "routing_correct": true,
+      "patterns_found": [
+        "Binary Search",
+        "Prefix Sum",
+        "Segment Tree",
+        "Fenwick Tree"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "partial",
+      "score": 0.5568193919128842,
+      "retries": 3,
+      "latency_ms": 975.0180244445801,
+      "passed": true
+    },
+    {
+      "query_id": "Q11",
+      "query": "Which patterns are related to binary search?",
+      "expected_type": "graph_hop",
+      "actual_type": "graph_hop",
+      "routing_correct": true,
+      "patterns_found": [
+        "Fenwick Tree",
+        "Dynamic Programming",
+        "Greedy",
+        "Binary Search",
+        "Prefix Sum"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "partial",
+      "score": 0.5610733762146934,
+      "retries": 3,
+      "latency_ms": 1023.3359336853027,
+      "passed": true
+    },
+    {
+      "query_id": "Q12",
+      "query": "Give me a C++ template for binary search",
+      "expected_type": "code_template",
+      "actual_type": "code_template",
+      "routing_correct": true,
+      "patterns_found": [
+        "Fenwick Tree",
+        "Dynamic Programming",
+        "Prefix Sum",
+        "Binary Search",
+        "Greedy"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "partial",
+      "score": 0.5477777777777778,
+      "retries": 3,
+      "latency_ms": 1843.857765197754,
+      "passed": true
+    },
+    {
+      "query_id": "Q13",
+      "query": "Show C++ code for a segment tree",
+      "expected_type": "code_template",
+      "actual_type": "code_template",
+      "routing_correct": true,
+      "patterns_found": [
+        "Segment Tree",
+        "Greedy",
+        "Two Pointers",
+        "Fenwick Tree"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.6308512463929161,
+      "retries": 0,
+      "latency_ms": 1637.416124343872,
+      "passed": true
+    },
+    {
+      "query_id": "Q14",
+      "query": "C++ implementation of sliding window",
+      "expected_type": "code_template",
+      "actual_type": "code_template",
+      "routing_correct": true,
+      "patterns_found": [
+        "Sliding Window"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "partial",
+      "score": 0.5484177511003282,
+      "retries": 3,
+      "latency_ms": 1227.524757385254,
+      "passed": true
+    },
+    {
+      "query_id": "Q15",
+      "query": "Give me a code template for prefix sum",
+      "expected_type": "code_template",
+      "actual_type": "code_template",
+      "routing_correct": true,
+      "patterns_found": [
+        "Sliding Window",
+        "Binary Search",
+        "Greedy",
+        "Prefix Sum"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "partial",
+      "score": 0.5218067655487666,
+      "retries": 3,
+      "latency_ms": 948.1291770935059,
+      "passed": true
+    },
+    {
+      "query_id": "Q16",
+      "query": "Show me a Fenwick tree C++ template",
+      "expected_type": "code_template",
+      "actual_type": "code_template",
+      "routing_correct": true,
+      "patterns_found": [
+        "Segment Tree",
+        "Prefix Sum",
+        "Binary Search",
+        "Fenwick Tree"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "partial",
+      "score": 0.5434920634920635,
+      "retries": 3,
+      "latency_ms": 1446.671724319458,
+      "passed": true
+    },
+    {
+      "query_id": "Q17",
+      "query": "Give me a C++ template for BFS",
+      "expected_type": "code_template",
+      "actual_type": "code_template",
+      "routing_correct": true,
+      "patterns_found": [
+        "DFS",
+        "BFS"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "partial",
+      "score": 0.4142857142857143,
+      "retries": 3,
+      "latency_ms": 1096.2481498718262,
+      "passed": true
+    },
+    {
+      "query_id": "Q18",
+      "query": "What is the time complexity of a Fenwick tree?",
+      "expected_type": "hybrid",
+      "actual_type": "hybrid",
+      "routing_correct": true,
+      "patterns_found": [
+        "BFS",
+        "Fenwick Tree",
+        "Segment Tree",
+        "DFS",
+        "Two Pointers",
+        "Prefix Sum",
+        "Binary Search",
+        "Greedy"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.81731471195817,
+      "retries": 0,
+      "latency_ms": 1015.822172164917,
+      "passed": true
+    },
+    {
+      "query_id": "Q19",
+      "query": "What is the time complexity of binary search?",
+      "expected_type": "hybrid",
+      "actual_type": "hybrid",
+      "routing_correct": true,
+      "patterns_found": [
+        "Dynamic Programming",
+        "Two Pointers",
+        "Prefix Sum",
+        "Binary Search",
+        "Greedy"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.8428222085038821,
+      "retries": 0,
+      "latency_ms": 1124.8869895935059,
+      "passed": true
+    },
+    {
+      "query_id": "Q20",
+      "query": "What is the space complexity of a segment tree?",
+      "expected_type": "hybrid",
+      "actual_type": "hybrid",
+      "routing_correct": true,
+      "patterns_found": [
+        "Segment Tree",
+        "Greedy",
+        "Two Pointers",
+        "Fenwick Tree"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.8261972457170487,
+      "retries": 0,
+      "latency_ms": 32816.74289703369,
+      "passed": true
+    },
+    {
+      "query_id": "Q21",
+      "query": "What is the time complexity of the two pointers technique?",
+      "expected_type": "hybrid",
+      "actual_type": "hybrid",
+      "routing_correct": true,
+      "patterns_found": [
+        "Segment Tree",
+        "Two Pointers",
+        "Prefix Sum",
+        "Binary Search",
+        "Greedy"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.8156373366713524,
+      "retries": 0,
+      "latency_ms": 2307.6179027557373,
+      "passed": true
+    },
+    {
+      "query_id": "Q22",
+      "query": "Explain the sliding window technique",
+      "expected_type": "hybrid",
+      "actual_type": "hybrid",
+      "routing_correct": true,
+      "patterns_found": [
+        "Sliding Window",
+        "Prefix Sum"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.8293870850404104,
+      "retries": 0,
+      "latency_ms": 1228.102207183838,
+      "passed": true
+    },
+    {
+      "query_id": "Q23",
+      "query": "How does a Fenwick tree support point updates?",
+      "expected_type": "hybrid",
+      "actual_type": "hybrid",
+      "routing_correct": true,
+      "patterns_found": [
+        "Fenwick Tree",
+        "Segment Tree",
+        "DFS",
+        "Prefix Sum",
+        "Binary Search",
+        "BFS"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.8078124999999999,
+      "retries": 0,
+      "latency_ms": 1705.8889865875244,
+      "passed": true
+    },
+    {
+      "query_id": "Q24",
+      "query": "Explain how greedy algorithms are used in these editorials",
+      "expected_type": "hybrid",
+      "actual_type": "hybrid",
+      "routing_correct": true,
+      "patterns_found": [
+        "Segment Tree",
+        "Prefix Sum",
+        "Two Pointers",
+        "Greedy"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.7854166666666668,
+      "retries": 0,
+      "latency_ms": 1061.0721111297607,
+      "passed": true
+    },
+    {
+      "query_id": "Q25",
+      "query": "Is a Fenwick tree O(log n) or O(n) per update?",
+      "expected_type": "contradiction",
+      "actual_type": "contradiction",
+      "routing_correct": true,
+      "patterns_found": [
+        "Segment Tree",
+        "Prefix Sum",
+        "Binary Search",
+        "Fenwick Tree"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.6406916284440743,
+      "retries": 0,
+      "latency_ms": 1226.2089252471924,
+      "passed": true
+    },
+    {
+      "query_id": "Q26",
+      "query": "Which is correct: binary search O(log n) or O(n)?",
+      "expected_type": "contradiction",
+      "actual_type": "contradiction",
+      "routing_correct": true,
+      "patterns_found": [
+        "Fenwick Tree",
+        "Dynamic Programming",
+        "Prefix Sum",
+        "Binary Search",
+        "Greedy"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "verdict": "sufficient",
+      "score": 0.6494401731274345,
+      "retries": 0,
+      "latency_ms": 966.4618968963623,
+      "passed": true
+    },
+    {
+      "query_id": "Q27",
+      "query": "Explain the Aho-Corasick automaton",
+      "expected_type": "semantic",
+      "actual_type": "semantic",
+      "routing_correct": true,
+      "patterns_found": [
+        "Sliding Window",
+        "DFS",
+        "Segment Tree",
+        "Two Pointers",
+        "Greedy",
+        "Binary Search",
+        "Prefix Sum",
+        "BFS"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "verdict": "abstain",
+      "score": 0.07,
+      "retries": 1,
+      "latency_ms": 32.99307823181152,
+      "passed": true
+    },
+    {
+      "query_id": "Q28",
+      "query": "How does max flow with Dinic's algorithm work?",
+      "expected_type": "semantic",
+      "actual_type": "semantic",
+      "routing_correct": true,
+      "patterns_found": [
+        "Grid Simulation",
+        "Segment Tree",
+        "Dynamic Programming",
+        "Two Pointers",
+        "Greedy",
+        "Binary Search",
+        "Prefix Sum"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": true,
+      "abstained": true,
+      "abstention_correct": true,
+      "verdict": "abstain",
+      "score": 0.014583333333333332,
+      "retries": 1,
+      "latency_ms": 25.990009307861328,
+      "passed": true
+    },
+    {
+      "query_id": "Q29",
+      "query": "Explain the Fast Fourier Transform for polynomial multiplication",
+      "expected_type": "semantic",
+      "actual_type": "semantic",
+      "routing_correct": true,
+      "patterns_found": [
+        "Fenwick Tree",
+        "Sliding Window",
+        "Two Pointers",
+        "Greedy",
+        "Binary Search",
+        "Prefix Sum"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "verdict": "abstain",
+      "score": 0.07666666666666667,
+      "retries": 1,
+      "latency_ms": 23.179054260253906,
+      "passed": true
+    },
+    {
+      "query_id": "Q30",
+      "query": "What is Mo's algorithm?",
+      "expected_type": "semantic",
+      "actual_type": "semantic",
+      "routing_correct": true,
+      "patterns_found": [
+        "Grid Simulation",
+        "Fenwick Tree",
+        "Sliding Window",
+        "Two Pointers",
+        "Prefix Sum",
+        "Binary Search",
+        "Greedy"
+      ],
+      "pattern_recall": 1.0,
+      "has_code": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "verdict": "abstain",
+      "score": 0.08166666666666668,
+      "retries": 1,
+      "latency_ms": 22.8879451751709,
       "passed": true
     }
   ]

@@ -167,7 +167,8 @@ class EvalHarness:
             latency = (time.time() - start) * 1000
 
             # Evaluate routing
-            expected_route = EXPECTED_ROUTES.get(qid, QueryType.SEMANTIC)
+            expected_route = (QueryType(tq["expected_route"]) if "expected_route" in tq
+                              else EXPECTED_ROUTES.get(qid, QueryType.SEMANTIC))
             actual_route = QueryType(response.metadata["routing"]["type"])
             routing_correct = actual_route == expected_route
 
