@@ -1,0 +1,260 @@
+{
+  "patterns": {
+    "Two Pointers": {
+      "name": "Two Pointers",
+      "description": "Maintain left and right pointers on the string to greedily check characters from ends.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(1)",
+      "category": "array"
+    },
+    "Greedy": {
+      "name": "Greedy",
+      "description": "Making locally optimal choices at each step to find the global optimum, implemented here by starting from leaves and walking up to form paths.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(n)",
+      "category": "greedy"
+    },
+    "Sliding Window": {
+      "name": "Sliding Window",
+      "description": "Technique for maintaining a window over an array to solve range queries, though typically restricted to arrays with non-negative numbers when finding sums.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(1)",
+      "category": "array"
+    },
+    "Prefix Sum": {
+      "name": "Prefix Sum",
+      "description": "Technique used to compute cumulative sums of an array in O(1) time after O(n) preprocessing, often combined with a hash map to find subarrays with a given sum.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(n)",
+      "category": "array"
+    },
+    "Binary Search": {
+      "name": "Binary Search",
+      "description": "Technique used to efficiently find the insertion position in the tails array for the non-decreasing subsequence.",
+      "time_complexity": "O(log n)",
+      "space_complexity": "O(1)",
+      "category": "search"
+    },
+    "Fenwick Tree": {
+      "name": "Fenwick Tree",
+      "description": "A data structure that supports point updates and prefix sum queries efficiently, often used for finding k-th elements using binary lifting.",
+      "time_complexity": "O((n+q) log n)",
+      "space_complexity": "O(n)",
+      "category": "tree"
+    },
+    "Segment Tree": {
+      "name": "Segment Tree",
+      "description": "A binary tree used for storing intervals or segments, allowing answering range queries and point updates efficiently.",
+      "time_complexity": "O(n) build, O(log n) update and query",
+      "space_complexity": "O(n)",
+      "category": "tree"
+    },
+    "Dfs": {
+      "name": "Dfs",
+      "description": "Traversing tree structures by visiting nodes from leaves upwards to partition the tree into disjoint paths.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(n)",
+      "category": "graph"
+    },
+    "Dynamic Programming": {
+      "name": "Dynamic Programming",
+      "description": "Solving problems by breaking them down into simpler subproblems, often used here to find the longest increasing subsequence.",
+      "time_complexity": "O(n log M)",
+      "space_complexity": "O(M)",
+      "category": "dp"
+    },
+    "Bfs": {
+      "name": "Bfs",
+      "description": "Breadth-First Search on a binary tree to find the minimum changes/cost to reach any leaf node.",
+      "time_complexity": "O(n)",
+      "space_complexity": "O(n)",
+      "category": "graph"
+    },
+    "Grid Simulation": {
+      "name": "Grid Simulation",
+      "description": "Iterating through grid cells and simulating local conditions based on neighbor values.",
+      "time_complexity": "O(nm)",
+      "space_complexity": "O(nm)",
+      "category": "array"
+    },
+    "Sparse Table": {
+      "name": "Sparse Table",
+      "description": "Static Range Minimum Query data structure that can be used as an alternative approach for interval sizes.",
+      "time_complexity": "O(N log N)",
+      "space_complexity": "O(N log N)",
+      "category": "other"
+    }
+  },
+  "relationships": [
+    {
+      "from_pattern": "Two Pointers",
+      "to_pattern": "Greedy",
+      "rel_type": "SAME_COMPLEXITY_CLASS",
+      "detail": "The solution combines two pointers with a greedy strategy to solve the problem."
+    },
+    {
+      "from_pattern": "Prefix Sum",
+      "to_pattern": "Sliding Window",
+      "rel_type": "ALTERNATIVE_TO",
+      "detail": "Prefix sum with hash map handles negative numbers whereas sliding window generally does not for subarray sum problems."
+    },
+    {
+      "from_pattern": "Greedy",
+      "to_pattern": "Binary Search",
+      "rel_type": "PREREQUISITE_OF",
+      "detail": "Greedy simulation is used as the check function inside the binary search on the answer."
+    },
+    {
+      "from_pattern": "Fenwick Tree",
+      "to_pattern": "Binary Search",
+      "rel_type": "PREREQUISITE_OF",
+      "detail": "Binary search on the BIT is used within the Fenwick tree structure to find the k-th element."
+    },
+    {
+      "from_pattern": "Segment Tree",
+      "to_pattern": "Fenwick Tree",
+      "rel_type": "ALTERNATIVE_TO",
+      "detail": "Both data structures can handle range sum queries and point updates, though Segment Tree generalises to other operations."
+    },
+    {
+      "from_pattern": "Greedy",
+      "to_pattern": "DFS",
+      "rel_type": "PREREQUISITE_OF",
+      "detail": "Greedy tree traversal utilizes DFS-like bottom-up path construction to cover all nodes."
+    },
+    {
+      "from_pattern": "Binary Search",
+      "to_pattern": "Dynamic Programming",
+      "rel_type": "PREREQUISITE_OF",
+      "detail": "Binary search is used to optimize the inner lookup step of the LIS dynamic programming solution."
+    },
+    {
+      "from_pattern": "Segment Tree",
+      "to_pattern": "Dynamic Programming",
+      "rel_type": "PREREQUISITE_OF",
+      "detail": "Segment tree is used to optimize the transition step of the dynamic programming solution."
+    },
+    {
+      "from_pattern": "Prefix Sum",
+      "to_pattern": "Binary Search",
+      "rel_type": "PREREQUISITE_OF",
+      "detail": "Prefix sums are used inside the binary search condition to compute range sums in O(1)."
+    },
+    {
+      "from_pattern": "Greedy",
+      "to_pattern": "Sparse Table",
+      "rel_type": "ALTERNATIVE_TO",
+      "detail": "Both can be used to solve the minimum interval query problem after sorting or coordinate compression."
+    },
+    {
+      "from_pattern": "Prefix Sum",
+      "to_pattern": "Greedy",
+      "rel_type": "PREREQUISITE_OF",
+      "detail": "Suffix sums are computed first to provide the values needed for the greedy decision at each step."
+    }
+  ],
+  "code_templates": [
+    {
+      "pattern": "Two Pointers",
+      "code": "bool solve(string& s) {\n    int n = s.size();\n    int lo = 0, hi = n - 1;\n    for (int i = 0; i < n; i++) {\n        char c = 'a' + i;\n        if (s[lo] == c) lo++;\n        else if (s[hi] == c) hi--;\n        else return false;\n    }\n    return true;\n}",
+      "explanation": "Uses two pointers lo and hi to verify if the alphabetical characters from 'a' onwards appear at either end of the string."
+    },
+    {
+      "pattern": "Greedy",
+      "code": "string solve(int x) {\n    if (x > 45) return \"-1\";\n    string res;\n    for (int d = 9; d >= 1 && x > 0; d--) {\n        if (x >= d) { res += ('0' + d); x -= d; }\n        else { res += ('0' + x); x = 0; }\n    }\n    reverse(res.begin(), res.end());\n    return res;\n}",
+      "explanation": "Iterates from the largest digit 9 down to 1, greedily adding as much as possible to the remaining sum until the sum is satisfied."
+    },
+    {
+      "pattern": "Sliding Window",
+      "code": "int solve(string& s) {\n    int n = s.size(), cnt = 0;\n    for (int i = 0; i + 2 < n; i++)\n        if (s[i] != s[i + 2]) cnt++;\n    return cnt + 1;\n}",
+      "explanation": "Iterates through the string checking characters with an offset of 2 to count distinct pairs."
+    },
+    {
+      "pattern": "Sliding Window",
+      "code": "int lengthOfLongestSubstring(string s) {\n    unordered_set<char> window;\n    int lo = 0, best = 0;\n    for (int hi = 0; hi < (int)s.size(); hi++) {\n        while (window.count(s[hi]))\n            window.erase(s[lo++]);\n        window.insert(s[hi]);\n        best = max(best, hi - lo + 1);\n    }\n    return best;\n}",
+      "explanation": "Uses a hash set and two pointers (lo and hi) to find the longest substring without repeating characters by sliding the window."
+    },
+    {
+      "pattern": "Sliding Window",
+      "code": "string minWindow(string s, string t) {\n    unordered_map<char,int> need, have;\n    for (char c : t) need[c]++;\n    int required = need.size(), formed = 0;\n    int lo = 0, best_len = INT_MAX, best_lo = 0;\n    for (int hi = 0; hi < (int)s.size(); hi++) {\n        have[s[hi]]++;\n        if (need.count(s[hi]) && have[s[hi]] == need[s[hi]])\n            formed++;\n        while (formed == required) {\n            if (hi - lo + 1 < best_len) {\n                best_len = hi - lo + 1;\n                best_lo = lo;\n            }\n            have[s[lo]]--;\n            if (need.count(s[lo]) && have[s[lo]] < need[s[lo]])\n                formed--;\n            lo++;\n        }\n    }\n    return best_len == INT_MAX ? \"\" : s.substr(best_lo, best_len);\n}",
+      "explanation": "Uses a hash map frequency count and a variable-size sliding window with two pointers (lo and hi) to find the minimum window substring containing all characters of t."
+    },
+    {
+      "pattern": "Prefix Sum",
+      "code": "int solve(string& s) {\n    int n = s.size();\n    vector<int> prefix(n + 1, 0);\n    for (int i = 0; i < n; i++)\n        prefix[i + 1] = prefix[i] + (s[i] == '(' ? 1 : -1);\n    if (prefix[n] != 0) return -1;\n    int min_pref = *min_element(prefix.begin(), prefix.end());\n    return min_pref < 0 ? 2 : 1;\n}",
+      "explanation": "Calculates the prefix sums of the bracket sequence to check if it's balanced and determines the minimum prefix sum to decide if 1 or 2 colorings are needed."
+    },
+    {
+      "pattern": "Prefix Sum",
+      "code": "int subarraySum(vector<int>& nums, int k) {\n    unordered_map<int,int> freq;\n    freq[0] = 1;\n    int prefix = 0, count = 0;\n    for (int x : nums) {\n        prefix += x;\n        count += freq[prefix - k];\n        freq[prefix]++;\n    }\n    return count;\n}",
+      "explanation": "Uses a hash map to store the frequencies of prefix sums encountered so far, allowing us to find the number of valid subarrays ending at the current index that sum to k in O(1) time."
+    },
+    {
+      "pattern": "Binary Search",
+      "code": "bool canSend(vector<long long>& t, long long f, long long a, long long b, int charges) {\n    long long cur = f;\n    for (int i = 0; i < (int)t.size(); i++) {\n        long long diff = t[i] - (i > 0 ? t[i-1] : 0);\n        cur -= diff * a;\n        if (cur <= 0) return false;\n    }\n    return true;\n}\n\nlong long solve(vector<long long>& t, long long f, long long a, long long b) {\n    long long lo = 0, hi = 1e18;\n    while (hi - lo > 1) {\n        long long mid = lo + (hi - lo) / 2;\n        if (canSend(t, f, a, b, mid)) hi = mid;\n        else lo = mid;\n    }\n    return hi;\n}",
+      "explanation": "Implements binary search on the answer combined with a greedy check function to find the minimum feasible value."
+    },
+    {
+      "pattern": "Binary Search",
+      "code": "int searchInsert(vector<int>& nums, int target) {\n    int lo = 0, hi = nums.size();\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (nums[mid] < target) lo = mid + 1;\n        else hi = mid;\n    }\n    return lo;\n}",
+      "explanation": "Finds the leftmost position where target could be inserted while keeping the array sorted using standard lower bound binary search."
+    },
+    {
+      "pattern": "Fenwick Tree",
+      "code": "struct BIT {\n    int n;\n    vector<int> tree;\n    BIT(int n) : n(n), tree(n + 1, 0) {}\n    void update(int i, int v) {\n        for (; i <= n; i += i & (-i)) tree[i] += v;\n    }\n    int query(int i) {\n        int s = 0;\n        for (; i > 0; i -= i & (-i)) s += tree[i];\n        return s;\n    }\n    int kth(int k) {\n        int pos = 0;\n        for (int pw = 1 << 20; pw; pw >>= 1)\n            if (pos + pw <= n && tree[pos + pw] < k) {\n                pos += pw;\n                k -= tree[pos];\n            }\n        return pos + 1;\n    }\n};",
+      "explanation": "Standard Fenwick Tree implementation supporting point updates, prefix sum queries, and k-th element finding using binary lifting."
+    },
+    {
+      "pattern": "Segment Tree",
+      "code": "class NumArray {\n    int n;\n    vector<int> tree;\n    void build(vector<int>& a, int v, int tl, int tr) {\n        if (tl == tr) { tree[v] = a[tl]; return; }\n        int tm = (tl + tr) / 2;\n        build(a, 2*v, tl, tm);\n        build(a, 2*v+1, tm+1, tr);\n        tree[v] = tree[2*v] + tree[2*v+1];\n    }\n    void upd(int v, int tl, int tr, int pos, int val) {\n        if (tl == tr) { tree[v] = val; return; }\n        int tm = (tl + tr) / 2;\n        if (pos <= tm) upd(2*v, tl, tm, pos, val);\n        else upd(2*v+1, tm+1, tr, pos, val);\n        tree[v] = tree[2*v] + tree[2*v+1];\n    }\n    int qry(int v, int tl, int tr, int l, int r) {\n        if (l > r) return 0;\n        if (l == tl && r == tr) return tree[v];\n        int tm = (tl + tr) / 2;\n        return qry(2*v, tl, tm, l, min(r, tm))\n             + qry(2*v+1, tm+1, tr, max(l, tm+1), r);\n    }\npublic:\n    NumArray(vector<int>& nums) : n(nums.size()), tree(4*n) {\n        build(nums, 1, 0, n-1);\n    }\n    void update(int i, int val) { upd(1, 0, n-1, i, val); }\n    int sumRange(int l, int r) { return qry(1, 0, n-1, l, r); }\n};",
+      "explanation": "Standard Segment Tree implementation supporting point updates and range sum queries."
+    },
+    {
+      "pattern": "Prefix Sum",
+      "code": "long long solve(vector<int>& a) {\n    int n = a.size();\n    vector<int> pref1(n + 1, 0), suf0(n + 1, 0);\n    for (int i = 0; i < n; i++)\n        pref1[i + 1] = pref1[i] + (a[i] == 1);\n    for (int i = n - 1; i >= 0; i--)\n        suf0[i] = suf0[i + 1] + (a[i] == 0);\n    \n    long long base = 0;\n    for (int i = 0; i < n; i++)\n        if (a[i] == 1) base += suf0[i + 1];\n    \n    long long best = base;\n    for (int i = 0; i < n; i++) {\n        long long cur;\n        if (a[i] == 0)\n            cur = base + suf0[i + 1] - pref1[i];\n        else\n            cur = base - suf0[i + 1] + pref1[i];\n        best = max(best, cur);\n    }\n    return best;\n}",
+      "explanation": "Precomputes prefix counts of 1s and suffix counts of 0s to efficiently calculate the change in inversions when flipping each element."
+    },
+    {
+      "pattern": "Greedy",
+      "code": "void solve() {\n    int n; cin >> n;\n    vector<int> par(n + 1);\n    vector<bool> has_child(n + 1, false);\n    int root = -1;\n    for (int i = 1; i <= n; i++) {\n        cin >> par[i];\n        if (par[i] == i) root = i;\n        else has_child[par[i]] = true;\n    }\n    vector<bool> vis(n + 1, false);\n    vector<vector<int>> paths;\n    for (int i = 1; i <= n; i++) {\n        if (has_child[i]) continue;\n        vector<int> path;\n        int v = i;\n        while (!vis[v]) {\n            vis[v] = true;\n            path.push_back(v);\n            if (v == root) break;\n            v = par[v];\n        }\n        reverse(path.begin(), path.end());\n        paths.push_back(path);\n    }\n}",
+      "explanation": "Iterates from each leaf node upward to the root to construct disjoint vertical paths using a visited array to prevent overlapping."
+    },
+    {
+      "pattern": "Dynamic Programming",
+      "code": "vector<int> longestObstacleCourseAtEachPosition(vector<int>& obstacles) {\n    vector<int> tails, res;\n    for (int x : obstacles) {\n        auto it = upper_bound(tails.begin(), tails.end(), x);\n        int pos = it - tails.begin();\n        if (it == tails.end()) tails.push_back(x);\n        else *it = x;\n        res.push_back(pos + 1);\n    }\n    return res;\n}",
+      "explanation": "Iterates through the array and uses upper_bound to maintain a tails array of the smallest ending elements for non-decreasing subsequences of each length."
+    },
+    {
+      "pattern": "BFS",
+      "code": "void solve() {\n    int n; cin >> n;\n    string s; cin >> s; s = \" \" + s;\n    vector<int> L(n+1), R(n+1);\n    for (int i = 1; i <= n; i++) cin >> L[i] >> R[i];\n    \n    vector<int> dist(n + 1, 1e9);\n    dist[1] = 0;\n    queue<int> q;\n    q.push(1);\n    while (!q.empty()) {\n        int v = q.front(); q.pop();\n        if (L[v]) {\n            int cost = (s[v] != 'L') ? 1 : 0;\n            if (dist[v] + cost < dist[L[v]]) {\n                dist[L[v]] = dist[v] + cost;\n                q.push(L[v]);\n            }\n        }\n        if (R[v]) {\n            int cost = (s[v] != 'R') ? 1 : 0;\n            if (dist[v] + cost < dist[R[v]]) {\n                dist[R[v]] = dist[v] + cost;\n                q.push(R[v]);\n            }\n        }\n    }\n    int ans = 1e9;\n    for (int i = 1; i <= n; i++)\n        if (!L[i] && !R[i]) ans = min(ans, dist[i]);\n    cout << ans << \"\\n\";\n}",
+      "explanation": "Uses BFS to traverse the tree while computing the minimum cost (changes required) to reach each node."
+    },
+    {
+      "pattern": "Grid Simulation",
+      "code": "void solve() {\n    int n, m; cin >> n >> m;\n    vector<vector<int>> a(n, vector<int>(m));\n    for (auto& row : a) for (auto& x : row) cin >> x;\n    \n    int dx[] = {0,0,1,-1}, dy[] = {1,-1,0,0};\n    for (int i = 0; i < n; i++)\n        for (int j = 0; j < m; j++) {\n            int mx = 0;\n            for (int d = 0; d < 4; d++) {\n                int ni = i+dx[d], nj = j+dy[d];\n                if (ni >= 0 && ni < n && nj >= 0 && nj < m)\n                    mx = max(mx, a[ni][nj]);\n            }\n            if (a[i][j] > mx) a[i][j] = mx;\n        }\n}",
+      "explanation": "Simulates grid updates by checking each cell against its four neighbors and replacing it with the maximum neighbor value if it is strictly greater than all of them."
+    },
+    {
+      "pattern": "Segment Tree",
+      "code": "struct SegTree {\n    int n;\n    vector<int> t;\n    SegTree(int n) : n(n), t(4*n, 0) {}\n    void update(int v, int tl, int tr, int pos, int val) {\n        if (tl == tr) { t[v] = max(t[v], val); return; }\n        int tm = (tl+tr)/2;\n        if (pos <= tm) update(2*v, tl, tm, pos, val);\n        else update(2*v+1, tm+1, tr, pos, val);\n        t[v] = max(t[2*v], t[2*v+1]);\n    }\n    int query(int v, int tl, int tr, int l, int r) {\n        if (l > r) return 0;\n        if (l == tl && r == tr) return t[v];\n        int tm = (tl+tr)/2;\n        return max(query(2*v, tl, tm, l, min(r,tm)),\n                   query(2*v+1, tm+1, tr, max(l,tm+1), r));\n    }\n};",
+      "explanation": "Segment tree supporting point updates and range maximum queries."
+    },
+    {
+      "pattern": "Binary Search",
+      "code": "void solve() {\n    int n; cin >> n;\n    vector<long long> a(n);\n    vector<int> idx(n);\n    for (int i = 0; i < n; i++) { cin >> a[i]; idx[i] = i; }\n    sort(idx.begin(), idx.end(), [&](int x, int y) { return a[x] < a[y]; });\n    sort(a.begin(), a.end());\n    \n    vector<long long> prefix(n + 1, 0);\n    for (int i = 0; i < n; i++) prefix[i+1] = prefix[i] + a[i];\n    \n    vector<int> ans(n);\n    for (int i = 0; i < n; i++) {\n        int lo = i, hi = n - 1, best = i;\n        while (lo <= hi) {\n            int mid = (lo + hi) / 2;\n            if (prefix[mid+1] - prefix[i] <= 2 * a[i]) {\n                best = mid;\n                lo = mid + 1;\n            } else hi = mid - 1;\n        }\n        ans[i] = best;\n    }\n}",
+      "explanation": "Sorts the array and builds a prefix sum array. For each element, uses binary search to find the furthest possible index that can be absorbed."
+    },
+    {
+      "pattern": "Greedy",
+      "code": "vector<int> minInterval(vector<vector<int>>& intervals, vector<int>& queries) {\n    int n = intervals.size(), q = queries.size();\n    sort(intervals.begin(), intervals.end());\n    vector<int> qi(q);\n    iota(qi.begin(), qi.end(), 0);\n    sort(qi.begin(), qi.end(), [&](int a, int b) { return queries[a] < queries[b]; });\n    \n    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;\n    vector<int> res(q, -1);\n    int j = 0;\n    for (int i : qi) {\n        while (j < n && intervals[j][0] <= queries[i]) {\n            int len = intervals[j][1] - intervals[j][0] + 1;\n            pq.push({len, intervals[j][1]});\n            j++;\n        }\n        while (!pq.empty() && pq.top().second < queries[i]) pq.pop();\n        if (!pq.empty()) res[i] = pq.top().first;\n    }\n    return res;\n}",
+      "explanation": "Sorts intervals and queries, then uses a priority queue to keep track of valid intervals covering the current query point."
+    },
+    {
+      "pattern": "Greedy",
+      "code": "long long solve(vector<int>& a) {\n    int n = a.size();\n    vector<long long> suffix(n + 1, 0);\n    for (int i = n - 1; i >= 0; i--)\n        suffix[i] = suffix[i + 1] + a[i];\n    \n    long long ans = suffix[0];  // must include first segment\n    for (int i = 1; i < n; i++)\n        if (suffix[i] > 0) ans += suffix[i];\n    return ans;\n}",
+      "explanation": "Computes suffix sums from right to left, then greedily adds each positive suffix sum to the total answer since starting a new subarray there increases the sum."
+    }
+  ],
+  "source_editorials": 20,
+  "extraction_mode": "llm"
+}

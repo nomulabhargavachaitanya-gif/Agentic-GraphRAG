@@ -108,6 +108,19 @@ Runs 30 benchmark queries (graph-hop, code, hybrid, semantic, contradiction, out
 streamlit run app.py   # opens http://localhost:8501
 ```
 
+## Cloud Deployment (Streamlit Community Cloud / Hugging Face Spaces)
+
+The repository is pre-configured for zero-setup cloud deployment:
+- `data/vector_index/` and `data/extractions.json` are committed (and `app.py` auto-builds the FAISS index if ever missing).
+- If no Neo4j instance is configured, `HybridRetriever` automatically falls back to `InMemoryGraphRetriever` loaded with both the seed graph and extracted editorial entities.
+- To deploy on **Streamlit Community Cloud** ([share.streamlit.io](https://share.streamlit.io)):
+  1. Select `nomulabhargavachaitanya-gif/Agentic-GraphRAG` and set main file path to `app.py`.
+  2. Under **Advanced settings → Secrets**, add:
+     ```toml
+     GEMINI_API_KEY = "your_gemini_api_key"
+     ```
+     *(Optional: also set `NEO4J_URI`, `NEO4J_USER`, and `NEO4J_PASSWORD` if connecting to a Neo4j AuraDB Free instance.)*
+
 ## Graph Schema
 
 ```

@@ -4,11 +4,21 @@ Run:  streamlit run app.py
 """
 from __future__ import annotations
 
+import os
 import streamlit as st
 
-from agent.rag_agent import RAGAgent
-
 st.set_page_config(page_title="Agentic GraphRAG", page_icon="🕸️", layout="wide")
+
+# Bridge Streamlit Cloud secrets into os.environ before loading modules
+try:
+    for _k in ("GEMINI_API_KEY", "GEMINI_MODEL", "NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD"):
+        if _k in st.secrets and not os.getenv(_k):
+            os.environ[_k] = str(st.secrets[_k])
+except Exception:
+    pass
+
+from agent.rag_agent import RAGAgent
+from retrieval.vector_store import INDEX_DIR, VectorStore
 
 EXAMPLES = [
     "What are the prerequisites for a Fenwick Tree?",
@@ -22,6 +32,10 @@ EXAMPLES = [
 
 @st.cache_resource(show_spinner="Initialising agent (graph + vector index)...")
 def get_agent() -> RAGAgent:
+    if not (INDEX_DIR / "index.faiss").exists():
+        store = VectorStore()
+        store.build_from_editorials()
+        store.save(INDEX_DIR)
     return RAGAgent()
 
 

@@ -322,6 +322,7 @@ class InMemoryGraphRetriever:
     """In-memory fallback graph retriever when Neo4j is offline."""
 
     def __init__(self):
+        from pathlib import Path
         from ingestion.load_graph import (
             PATTERNS, PREREQUISITE_EDGES, ALTERNATIVE_EDGES, CODE_TEMPLATES
         )
@@ -337,6 +338,40 @@ class InMemoryGraphRetriever:
             )
             for t in CODE_TEMPLATES
         }
+
+        # Also merge extracted entities from data/extractions.json if present
+        extractions_path = Path(__file__).resolve().parent.parent / "data" / "extractions.json"
+        if extractions_path.exists():
+            try:
+                with open(extractions_path) as f:
+                    ext = json.load(f)
+                for p in ext.get("patterns", []):
+                    if p["name"] not in self.patterns:
+                        self.patterns[p["name"]] = PatternInfo(
+                            name=p["name"],
+                            description=p.get("description", ""),
+                            time_complexity=p.get("time_complexity", ""),
+                            space_complexity=p.get("space_complexity", ""),
+                            category=p.get("category", "other"),
+                        )
+                for r in ext.get("relationships", []):
+                    rtype = r.get("rel_type", "")
+                    fp, tp = r.get("from_pattern", ""), r.get("to_pattern", "")
+                    if rtype == "PREREQUISITE_OF" and (fp, tp) not in self.prereqs:
+                        self.prereqs.append((fp, tp))
+                    elif rtype == "ALTERNATIVE_TO":
+                        self.alternatives.append((fp, tp, r.get("detail", "")))
+                for t in ext.get("code_templates", []):
+                    pat = t.get("pattern", "")
+                    if pat and pat not in self.templates:
+                        self.templates[pat] = TemplateInfo(
+                            pattern=pat,
+                            code=t.get("code", ""),
+                            explanation=t.get("explanation", ""),
+                            source_url="",
+                        )
+            except Exception:
+                pass
 
     def close(self):
         pass
