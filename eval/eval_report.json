@@ -7,8 +7,8 @@
     "pattern_recall": 1.0,
     "code_hit_rate": 1.0,
     "abstention_precision": 1.0,
-    "avg_score": 0.6625362647779772,
-    "avg_latency_ms": 94.90545590718587
+    "avg_score": 0.6667225336191609,
+    "avg_latency_ms": 1141.221523284912
   },
   "results": [
     {
@@ -18,21 +18,21 @@
       "actual_type": "graph_hop",
       "routing_correct": true,
       "patterns_found": [
-        "Two Pointers",
-        "Prefix Sum",
-        "Segment Tree",
         "Binary Search",
+        "Prefix Sum",
+        "Greedy",
+        "Segment Tree",
         "Fenwick Tree",
-        "Greedy"
+        "Two Pointers"
       ],
       "pattern_recall": 1.0,
       "has_code": true,
       "abstained": false,
       "abstention_correct": true,
       "verdict": "sufficient",
-      "score": 0.8454433319982418,
+      "score": 0.8574497191500274,
       "retries": 0,
-      "latency_ms": 238.63506317138672,
+      "latency_ms": 1812.4220371246338,
       "passed": true
     },
     {
@@ -42,8 +42,10 @@
       "actual_type": "graph_hop",
       "routing_correct": true,
       "patterns_found": [
+        "Prefix Sum",
+        "Binary Search",
         "Suffix Array",
-        "Binary Search"
+        "Greedy"
       ],
       "pattern_recall": 1.0,
       "has_code": false,
@@ -52,7 +54,7 @@
       "verdict": "sufficient",
       "score": 0.9199999999999999,
       "retries": 0,
-      "latency_ms": 130.59401512145996,
+      "latency_ms": 1056.326150894165,
       "passed": true
     },
     {
@@ -62,8 +64,8 @@
       "actual_type": "code_template",
       "routing_correct": true,
       "patterns_found": [
-        "Greedy",
         "Segment Tree",
+        "Greedy",
         "Two Pointers"
       ],
       "pattern_recall": 1.0,
@@ -73,7 +75,7 @@
       "verdict": "partial",
       "score": 0.5866666666666667,
       "retries": 3,
-      "latency_ms": 81.92157745361328,
+      "latency_ms": 2006.7908763885498,
       "passed": true
     },
     {
@@ -83,21 +85,21 @@
       "actual_type": "hybrid",
       "routing_correct": true,
       "patterns_found": [
-        "Sparse Table",
-        "Two Pointers",
-        "Prefix Sum",
         "Binary Search",
-        "Unknown",
-        "Greedy"
+        "Prefix Sum",
+        "Greedy",
+        "Sparse Table",
+        "Grid Simulation",
+        "Two Pointers"
       ],
       "pattern_recall": 1.0,
       "has_code": false,
       "abstained": false,
       "abstention_correct": true,
       "verdict": "sufficient",
-      "score": 0.7937500000000001,
+      "score": 0.8052083333333333,
       "retries": 0,
-      "latency_ms": 90.97003936767578,
+      "latency_ms": 724.581241607666,
       "passed": true
     },
     {
@@ -107,22 +109,22 @@
       "actual_type": "contradiction",
       "routing_correct": true,
       "patterns_found": [
-        "Sparse Table",
         "Priority Queue",
-        "Two Pointers",
-        "Sweep Line",
+        "Greedy",
+        "Sparse Table",
         "Segment Tree",
+        "Sweep Line",
         "Fenwick Tree",
-        "Greedy"
+        "Two Pointers"
       ],
       "pattern_recall": 1.0,
       "has_code": true,
       "abstained": false,
       "abstention_correct": true,
       "verdict": "sufficient",
-      "score": 0.7793575900029545,
+      "score": 0.781010482564938,
       "retries": 0,
-      "latency_ms": 12.812137603759766,
+      "latency_ms": 1215.6479358673096,
       "passed": true
     },
     {
@@ -132,12 +134,12 @@
       "actual_type": "semantic",
       "routing_correct": true,
       "patterns_found": [
-        "BFS",
-        "Two Pointers",
         "Prefix Sum",
-        "Sliding Window",
+        "BFS",
         "Greedy",
-        "DFS"
+        "Sliding Window",
+        "DFS",
+        "Two Pointers"
       ],
       "pattern_recall": 1.0,
       "has_code": false,
@@ -146,7 +148,7 @@
       "verdict": "abstain",
       "score": 0.049999999999999996,
       "retries": 1,
-      "latency_ms": 14.499902725219727,
+      "latency_ms": 31.560897827148438,
       "passed": true
     }
   ]

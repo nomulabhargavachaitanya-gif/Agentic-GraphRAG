@@ -17,6 +17,10 @@
 
 ## Quick Start
 
+### 0. Configure Gemini (optional)
+
+Copy `.env.example` to `.env` and set `GEMINI_API_KEY` (free key from Google AI Studio). Without a key the system falls back to rules-based extraction and structured answers. Default model: `gemini-3.5-flash-lite` (override with `GEMINI_MODEL`).
+
 ### 1. Start infrastructure
 
 ```bash
@@ -59,6 +63,9 @@ python -m ingestion.pipeline --mode rules --dry-run
 
 # With live Neo4j:
 python -m ingestion.pipeline --mode rules
+
+# LLM extraction with Gemini (free tier; needs GEMINI_API_KEY in .env):
+python -m ingestion.pipeline --mode llm
 ```
 
 ### 5. Build vector index (Phase 3)
@@ -169,6 +176,8 @@ rag_project/
 │   ├── vector_retriever.py    ← Phase 3: vector search interface
 │   ├── query_router.py        ← Phase 4: query classification
 │   └── hybrid_retriever.py    ← Phase 4: joint graph+vector retrieval
+├── llm/
+│   └── gemini.py              ← Gemini client with retry/backoff
 ├── agent/
 │   └── rag_agent.py           ← Phase 5: self-correcting agentic loop
 ├── app.py                     ← Phase 8: Streamlit demo UI

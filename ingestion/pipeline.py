@@ -7,7 +7,7 @@ Usage:
     # Full pipeline with rule-based extraction (no API key needed)
     python -m ingestion.pipeline --mode rules
 
-    # Full pipeline with LLM extraction (requires ANTHROPIC_API_KEY)
+    # Full pipeline with LLM extraction (requires GEMINI_API_KEY)
     python -m ingestion.pipeline --mode llm
 
     # Dry run: extract but don't write to Neo4j
@@ -58,7 +58,7 @@ def run_pipeline(
     Run the full ingestion pipeline.
 
     Args:
-        mode: "rules" for rule-based extraction, "llm" for Claude API.
+        mode: "rules" for rule-based extraction, "llm" for Gemini API.
         dry_run: If True, skip Neo4j loading.
         save_extractions: If True, save extraction results to JSON.
 
@@ -305,7 +305,7 @@ def main():
         "--mode",
         choices=["rules", "llm"],
         default="rules",
-        help="Extraction mode: 'rules' (no API key) or 'llm' (Claude)",
+        help="Extraction mode: 'rules' (no API key) or 'llm' (Gemini)",
     )
     parser.add_argument(
         "--dry-run",

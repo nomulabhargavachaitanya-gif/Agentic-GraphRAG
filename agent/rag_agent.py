@@ -29,10 +29,7 @@ from typing import Optional
 from retrieval.query_router import QueryRouter, QueryType
 from retrieval.hybrid_retriever import HybridRetriever, HybridRetrievalResult, RetrievedContext
 
-try:
-    import anthropic
-except ImportError:
-    anthropic = None  # type: ignore[assignment]
+from llm import gemini
 
 
 # ── Configuration ────────────────────────────────────────────────────────
@@ -43,7 +40,6 @@ MAX_RETRIES = 2                 # max self-correction retries
 ABSTENTION_THRESHOLD = 0.25     # below this → honest abstention
 
 # LLM synthesis model
-SYNTHESIS_MODEL = "claude-3-5-sonnet-20241022"
 
 
 # ── Result Types ─────────────────────────────────────────────────────────
@@ -191,22 +187,16 @@ class AnswerSynthesizer:
     """
     Synthesizes a final answer from graded contexts.
 
-    If the Anthropic API is available, uses Claude for natural language
+    If a Gemini API key is available, uses Gemini for natural language
     synthesis. Otherwise, returns a structured context dump.
     """
 
     def __init__(self):
-        self._client = None
-        api_key = os.getenv("ANTHROPIC_API_KEY", "")
-        if anthropic and api_key:
-            try:
-                self._client = anthropic.Anthropic(api_key=api_key)
-            except Exception:
-                pass
+        pass
 
     @property
     def has_llm(self) -> bool:
-        return self._client is not None
+        return gemini.available()
 
     def synthesize(
         self,
@@ -258,7 +248,7 @@ class AnswerSynthesizer:
     def _llm_synthesize(
         self, query: str, context_block: str, routing_decision=None
     ) -> str:
-        """Use Claude to synthesize a grounded answer."""
+        """Use Gemini to synthesize a grounded answer."""
         query_type = routing_decision.query_type.value if routing_decision else "unknown"
 
         system_prompt = (
@@ -281,13 +271,7 @@ class AnswerSynthesizer:
         )
 
         try:
-            response = self._client.messages.create(
-                model=SYNTHESIS_MODEL,
-                max_tokens=2048,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-            )
-            return response.content[0].text
+            return gemini.generate(user_prompt, system=system_prompt, max_tokens=2048)
         except Exception as e:
             return f"[LLM synthesis failed: {e}]\n\n" + self._structured_response(
                 query, [], None, routing_decision  # type: ignore

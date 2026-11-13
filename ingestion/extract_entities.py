@@ -29,7 +29,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 
 # ── Output types ─────────────────────────────────────────────────────────
@@ -116,25 +115,17 @@ Rules:
 
 def extract_with_llm(editorial_id: str, editorial_text: str, source_url: str = "") -> ExtractionResult:
     """
-    Extract entities using Claude API.
+    Extract entities using the Gemini API.
 
-    Requires ANTHROPIC_API_KEY in environment.
+    Requires GEMINI_API_KEY in environment.
     """
-    try:
-        import anthropic
-    except ImportError:
-        raise ImportError(
-            "anthropic package required for LLM extraction. "
-            "Install: pip install anthropic"
-        )
+    from llm import gemini
 
-    if not ANTHROPIC_API_KEY:
+    if not gemini.available():
         raise ValueError(
-            "ANTHROPIC_API_KEY not set. Add it to .env or environment. "
+            "GEMINI_API_KEY not set. Add it to .env or environment. "
             "Alternatively, use extract_with_rules() for rule-based extraction."
         )
-
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     user_prompt = f"""Analyze this competitive programming editorial and extract entities.
 
@@ -144,15 +135,9 @@ Editorial ID: {editorial_id}
 
 Return ONLY the JSON object, no markdown fences, no extra text."""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2048,
-        system=EXTRACTION_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_prompt}],
-    )
-
-    # Parse the response
-    raw_text = response.content[0].text.strip()
+    raw_text = gemini.generate(
+        user_prompt, system=EXTRACTION_SYSTEM_PROMPT, json_mode=True, max_tokens=8192
+    ).strip()
 
     # Handle potential markdown fencing
     if raw_text.startswith("```"):
