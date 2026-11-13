@@ -27,9 +27,7 @@ Copy `.env.example` to `.env` and set `GEMINI_API_KEY` (free key from Google AI 
 docker compose up -d
 ```
 
-This brings up:
-- **Neo4j** on `localhost:7474` (browser) / `localhost:7687` (Bolt)
-- **Qdrant** on `localhost:6333` (REST) / `localhost:6334` (gRPC)
+This brings up **Neo4j** on `localhost:7474` (browser) / `localhost:7687` (Bolt).
 
 Neo4j credentials: `neo4j` / `graphrag_password`
 
@@ -82,16 +80,18 @@ python -m retrieval.query_router
 
 Classifies queries into: `graph_hop`, `code_template`, `semantic`, `hybrid`, or `contradiction`.
 
-### 7. Run the agentic RAG system (Phase 5)
+### 7. Run the agentic RAG system & contradiction detector (Phases 5 & 6)
 
 ```bash
 python -m agent.rag_agent
+python -m agent.contradiction
 ```
 
-Runs the full retrieve → grade → self-correct → synthesize loop on all 6 benchmark queries. The agent:
+Runs the full retrieve → grade → self-correct → synthesize loop on benchmark queries, plus corpus-wide complexity contradiction scanning. The agent:
 - Routes each query to the optimal retrieval strategy
 - Grades retrieved context for relevance & sufficiency
 - Retries with wider search on low scores
+- Detects conflicting Big-O complexity claims across sources
 - Honestly abstains when a topic is not in the corpus
 
 ### 8. Run evaluation harness (Phase 7)
@@ -100,7 +100,7 @@ Runs the full retrieve → grade → self-correct → synthesize loop on all 6 b
 python -m eval.eval_harness
 ```
 
-Runs 30 benchmark queries (graph-hop, code, hybrid, semantic, contradiction, out-of-corpus). Latest: 30/30 pass, 100% routing/recall/abstention. Evaluates routing accuracy, pattern recall, code hit rate, abstention precision, and generates a structured report saved to `eval/eval_report.json`.
+Runs 30 benchmark queries (graph-hop, code, hybrid, semantic, contradiction, out-of-corpus). Latest: 30/30 pass, 100% routing/recall/code-hit/abstention, 72% avg retrieval score. Evaluates routing accuracy, pattern recall, code hit rate, abstention precision, and generates a structured report saved to `eval/eval_report.json`.
 
 ### 9. Launch the demo UI (Phase 8)
 
@@ -179,7 +179,8 @@ rag_project/
 ├── llm/
 │   └── gemini.py              ← Gemini client with retry/backoff
 ├── agent/
-│   └── rag_agent.py           ← Phase 5: self-correcting agentic loop
+│   ├── rag_agent.py           ← Phase 5: self-correcting agentic loop
+│   └── contradiction.py       ← Phase 6: Big-O contradiction detector
 ├── app.py                     ← Phase 8: Streamlit demo UI
 ├── eval/
 │   ├── test_queries.json      ← 30 benchmark test cases
