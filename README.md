@@ -2,7 +2,7 @@
 
 > Agentic self-correcting retrieval over algorithmic knowledge — graph traversal + vector search with grading, fallback, and contradiction detection.
 
-## Status: Phase 5 ✅ (Agentic Core Complete)
+## Status: All 8 Phases ✅
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -13,7 +13,7 @@
 | 5 | **Self-grading loop** + fallback/retry (the agentic core) | ✅ Done |
 | 6 | Contradiction detection path | ✅ Done |
 | 7 | Eval harness + metrics | ✅ Done |
-| 8 | Streamlit demo UI (optional) | ⬜ |
+| 8 | Streamlit demo UI | ✅ Done |
 
 ## Quick Start
 
@@ -95,6 +95,12 @@ python -m eval.eval_harness
 
 Evaluates routing accuracy, pattern recall, code hit rate, abstention precision, and generates a structured report saved to `eval/eval_report.json`.
 
+### 9. Launch the demo UI (Phase 8)
+
+```bash
+streamlit run app.py
+```
+
 ## Graph Schema
 
 ```
@@ -165,6 +171,7 @@ rag_project/
 │   └── hybrid_retriever.py    ← Phase 4: joint graph+vector retrieval
 ├── agent/
 │   └── rag_agent.py           ← Phase 5: self-correcting agentic loop
+├── app.py                     ← Phase 8: Streamlit demo UI
 ├── eval/
 │   ├── test_queries.json      ← 6 benchmark test cases
 │   └── eval_harness.py        ← Phase 7: evaluation + metrics

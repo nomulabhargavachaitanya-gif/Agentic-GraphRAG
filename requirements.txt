@@ -14,3 +14,4 @@ numpy>=2.0.0
 
 # Documentation
 reportlab==5.1.0
+streamlit>=1.40.0
