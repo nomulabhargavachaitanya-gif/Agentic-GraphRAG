@@ -2,7 +2,7 @@
 
 > **Self-correcting hybrid Graph + Vector Retrieval-Augmented Generation (RAG) engine over algorithmic editorials and C++ implementations — featuring deterministic query routing, multi-hop Neo4j Cypher traversal, FAISS dense retrieval, automated context grading with iterative search widening, Big-O contradiction detection, and calibrated abstention.**
 
-[![Live Demo on Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://agentic-graphrag-xzexgmstxjjb29q9rayg63.streamlit.app) — **[Live Demo](https://agentic-graphrag-xzexgmstxjjb29q9rayg63.streamlit.app)**
+[![Live Demo on Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://agentic-graphrag.streamlit.app/) — **[https://agentic-graphrag.streamlit.app/](https://agentic-graphrag.streamlit.app/)**
 
 ---
 
@@ -242,7 +242,7 @@ python -m eval.eval_harness
 
 ## Cloud Deployment (Streamlit Community Cloud / Hugging Face Spaces)
 
-**Live App**: **[https://agentic-graphrag-xzexgmstxjjb29q9rayg63.streamlit.app](https://agentic-graphrag-xzexgmstxjjb29q9rayg63.streamlit.app)**
+**Live App**: **[https://agentic-graphrag.streamlit.app/](https://agentic-graphrag.streamlit.app/)**
 
 The repository is pre-configured for zero-setup cloud deployment:
 - `data/vector_index/` and `data/extractions.json` are committed to the repository (and `app.py` automatically rebuilds the FAISS index on boot if ever absent).
