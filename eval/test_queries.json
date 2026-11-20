@@ -39,7 +39,6 @@
         "should_return_template": true
       },
       "expected_behavior": "Returns the Two Pointers C++ template with explanation.",
-      "phase": "4+",
       "expected_route": "code_template"
     },
     {
@@ -62,7 +61,6 @@
         "note": "Requires two ingested sources that claim different complexities for Segment Tree queries."
       },
       "expected_behavior": "Triggers the contradiction path, surfacing both claims with source attribution.",
-      "phase": "6+",
       "expected_route": "contradiction"
     },
     {
@@ -73,7 +71,6 @@
         "note": "Aho-Corasick is NOT in the ingested corpus."
       },
       "expected_behavior": "Should ABSTAIN: return 'I don't have enough grounded information' rather than hallucinate.",
-      "phase": "5+",
       "expected_route": "semantic"
     },
     {

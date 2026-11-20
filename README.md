@@ -21,12 +21,15 @@ Standard vector-only RAG systems struggle with competitive programming and algor
 ## Key Capabilities
 
 - **5-Way Deterministic Query Router (`retrieval/query_router.py`)**
-  Classifies incoming questions using canonical alias resolution (19 algorithmic pattern families) and intent signatures into:
+  Classifies incoming questions using word-boundary regex alias resolution (19 algorithmic pattern families) and intent signatures into:
   - `graph_hop` — Multi-hop prerequisite chains (`PREREQUISITE_OF*1..10`) and pairwise trade-off comparisons (`ALTERNATIVE_TO`).
-  - `code_template` — Verified C++ template lookup from Neo4j (`HAS_TEMPLATE`) fused with filtered FAISS code-chunk search.
-  - `hybrid` — Dense vector search over editorial chunks followed by automatic entity extraction and 1-hop graph property expansion.
-  - `semantic` — Pure dense vector similarity search using `all-MiniLM-L6-v2` (384-d unit-normalized embeddings).
+  - `code_template` — Verified C++ template lookup from Neo4j (`HAS_TEMPLATE`) fused with filtered FAISS + BM25 code-chunk search.
+  - `hybrid` — Joint dense FAISS + lexical Okapi BM25 Reciprocal Rank Fusion (RRF) over editorial chunks followed by automatic entity extraction and 1-hop graph property expansion.
+  - `semantic` — Dense `all-MiniLM-L6-v2` (384-d L2-normalized) + Okapi BM25 RRF similarity search.
   - `contradiction` — Multi-source retrieval + canonical graph complexity lookup for conflict verification.
+
+- **Dense FAISS + Okapi BM25 Reciprocal Rank Fusion (`retrieval/vector_store.py`)**
+  Combines 384-d unit-normalized dense embeddings with an in-memory Okapi BM25 ($k_1=1.5, b=0.75$) inverted index via Reciprocal Rank Fusion ($\text{RRF}(d) = \frac{1}{k + r_{\text{dense}}(d)} + \frac{w}{k + r_{\text{bm25}}(d)}$), boosting exact algorithmic identifier matches without inflating out-of-corpus noise.
 
 - **Self-Grading & Iterative Search Widening (`agent/rag_agent.py`)**
   Evaluates retrieved context without extra LLM latency using token/content overlap, cosine similarity calibration ($\cos\theta = 1 - \|\mathbf{u}-\mathbf{v}\|_2^2 / 2$), and pattern coverage:
@@ -62,11 +65,11 @@ Standard vector-only RAG systems struggle with competitive programming and algor
          │              │             │              │              │
          ▼              ▼             ▼              ▼              ▼
   ┌──────────────────────────┐                 ┌──────────────────────────┐
-  │  Neo4j Knowledge Graph   │◄───pattern_ids──┤    FAISS Vector Store    │
-  │  • 15 Pattern nodes      │                 │  • 91 embedded chunks    │
-  │  • PREREQUISITE_OF       │                 │    (71 prose, 20 C++)    │
+  │  Neo4j Knowledge Graph   │◄───pattern_ids──┤  FAISS + BM25 RRF Store  │
+  │  • 15 Pattern nodes      │                 │  • 68 embedded chunks    │
+  │  • PREREQUISITE_OF       │                 │    (48 prose, 20 C++)    │
   │  • ALTERNATIVE_TO        │                 │  • all-MiniLM-L6-v2      │
-  │  • 37 CodeTemplate nodes │                 │    (384-d L2 normalized) │
+  │  • 37 CodeTemplate nodes │                 │  • Okapi BM25 + RRF      │
   └─────────────┬────────────┘                 └─────────────┬────────────┘
                 └─────────────────────┬──────────────────────┘
                                       ▼
@@ -122,16 +125,24 @@ The evaluation suite (`eval/eval_harness.py` + `eval/test_queries.json`) tests t
 - **3 Contradiction queries** (conflicting vs. consistent Big-O claims across sources)
 - **5 Out-of-Corpus queries** (*Aho-Corasick*, *Dinic's Max Flow*, *Fast Fourier Transform*, *Mo's Algorithm*, *Quantum Annealing* — verifying zero hallucination)
 
-### Latest Benchmark Results (`eval/eval_report.json`)
+### Latest Benchmark & 3-Way Ablation Results (`eval/eval_report.json`)
 
-| Metric | Score | Details |
-| :--- | :--- | :--- |
-| **Overall Pass Rate** | **100% (30 / 30)** | All 30 queries satisfy routing, pattern recall, code hit, and abstention criteria |
-| **Routing Accuracy** | **100% (30 / 30)** | Exact match against ground-truth retrieval strategy |
-| **Pattern Recall** | **100%** | All expected graph patterns retrieved in context |
-| **Code Hit Rate** | **100%** | Compilable C++ templates returned on all template queries |
-| **Abstention Precision** | **100% (5 / 5)** | All 5 out-of-corpus queries cleanly abstained after 1 retry (`0` false abstentions) |
-| **Average Retrieval Score** | **72%** | `80%–92%` across in-corpus queries with `0` retries required |
+To quantify the contribution of the knowledge graph, Reciprocal Rank Fusion, and the self-grading agentic loop, `eval/eval_harness.py` evaluates all 30 queries across three system configurations:
+
+1. **Vanilla Vector-Only RAG (`vector_only`)**: Pure dense FAISS top-$k$ retrieval ($k=5$), no query routing, no graph traversal, no self-grading, and no abstention gate.
+2. **Static Hybrid Graph + RRF Vector (`hybrid_no_agent`)**: 5-way Router + Neo4j/In-Memory Graph + FAISS/BM25 RRF, without iterative search widening, contradiction verification, or calibrated abstention.
+3. **Full Agentic GraphRAG (`full_agentic`)**: Complete pipeline with 5-way Router, Graph + FAISS/BM25 RRF, Context Grader + Search Widening ($k \to 2k$), Two-Stage Big-O Contradiction Detector, and Calibrated Abstention.
+
+| Metric | 1. Vanilla Vector-Only | 2. Static Hybrid (Graph + RRF) | 3. Full Agentic GraphRAG |
+| :--- | :---: | :---: | :---: |
+| **Overall Pass Rate** | 53.3% (16 / 30) | 73.3% (22 / 30) | **100.0% (30 / 30)** |
+| **Routing Accuracy** | 16.7% | 100.0% | **100.0% (30 / 30)** |
+| **Graph-Hop Prerequisite / Trade-off Recall** | 78.6% | 100.0% | **100.0%** |
+| **C++ Code Template Hit Rate** | 75.0% | 100.0% | **100.0%** |
+| **Big-O Contradiction Verification** | 0.0% | 0.0% | **100.0% (3 / 3)** |
+| **Out-of-Corpus Abstention (Zero Hallucination)** | 0.0% (0 / 5) | 0.0% (0 / 5) | **100.0% (5 / 5)** |
+
+> **Key Takeaway:** Adding the 5-way router, knowledge graph traversal, and BM25/Dense RRF lifts pass rate from **53.3% $\rightarrow$ 73.3% (+20.0 pp)** by resolving transitive prerequisite chains and C++ template retrieval. Adding the self-grading agentic loop, Big-O conflict verifier, and calibrated abstention gate lifts pass rate from **73.3% $\rightarrow$ 100.0% (+26.7 pp, +46.7 pp overall over Vector-Only)** while eliminating 100% of out-of-corpus hallucinations.
 
 ---
 
@@ -158,13 +169,15 @@ Agentic-GraphRAG/
 │   └── gemini.py              # Google GenAI client with exponential backoff & Streamlit secrets support
 ├── eval/
 │   ├── test_queries.json      # 30 labeled benchmark queries across all 5 query types
-│   ├── eval_harness.py        # Automated evaluation runner & metrics aggregator
-│   └── eval_report.json       # Latest serialized evaluation results
+│   ├── eval_harness.py        # Automated evaluation runner & 3-way ablation benchmark
+│   └── eval_report.json       # Latest serialized evaluation & ablation results
+├── tests/
+│   └── test_graphrag.py       # Automated unit & integration tests (router, RRF, graph, grader)
 ├── data/
 │   ├── editorials.json        # 20 curated Codeforces & LeetCode editorials with C++ solutions
 │   ├── extractions.json       # Extracted patterns, relationships, and code templates
-│   └── vector_index/          # Persisted 91-chunk FAISS index + metadata
-├── app.py                     # Interactive Streamlit web application
+│   └── vector_index/          # Persisted 68-chunk FAISS + BM25 index & metadata
+├── app.py                     # Interactive Streamlit UI with subgraph visualization & ablation mode switcher
 ├── docker-compose.yml         # Local Neo4j 5.23 + APOC container configuration
 └── requirements.txt           # Python dependencies
 ```
@@ -234,7 +247,10 @@ python -m agent.rag_agent
 # Scan the corpus for conflicting Big-O complexity claims
 python -m agent.contradiction
 
-# Run the full 30-query benchmark evaluation harness
+# Run the automated unit & integration test suite
+python -m unittest discover -s tests -v
+
+# Run the full 30-query benchmark + 3-way ablation evaluation harness
 python -m eval.eval_harness
 ```
 
