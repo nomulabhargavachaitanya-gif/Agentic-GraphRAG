@@ -185,12 +185,13 @@ def _load_extractions_to_neo4j(
     print(f"  ✓ Connected to Neo4j at {NEO4J_URI}")
 
     with driver.session() as session:
-        # Merge patterns
+        # Merge patterns (preserve canonical descriptions/complexities if already seeded)
         for name, pat in patterns.items():
             session.run(
                 """
                 MERGE (p:Pattern {name: $name})
-                SET p.description      = $desc,
+                ON CREATE SET
+                    p.description      = $desc,
                     p.time_complexity  = $time,
                     p.space_complexity = $space,
                     p.category         = $cat

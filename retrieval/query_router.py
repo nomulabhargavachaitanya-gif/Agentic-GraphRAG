@@ -1,23 +1,23 @@
 """
-query_router.py — Phase 4: Query Classification & Hybrid Retrieval Router.
+query_router.py — Deterministic 5-Way Query Classifier & Alias Engine.
 
-Classifies incoming natural-language queries into one of four retrieval
+Classifies incoming natural-language queries into one of five retrieval
 strategies and dispatches to the appropriate retriever pipeline:
 
-  1. GRAPH_HOP     — prerequisite chains, comparisons, neighbor lookups
+  1. GRAPH_HOP     — prerequisite chains, pairwise comparisons, neighbor lookups
   2. CODE_TEMPLATE — C++ implementation requests, boilerplate, templates
   3. SEMANTIC      — general algorithmic concept / editorial prose queries
-  4. HYBRID        — needs both vector similarity + graph expansion
-  5. CONTRADICTION — conflicting complexity / correctness claims
+  4. HYBRID        — joint vector similarity + knowledge-graph expansion
+  5. CONTRADICTION — conflicting complexity / correctness claims across sources
 
-The router uses lightweight keyword/pattern heuristics (no LLM call),
-making it deterministic, fast, and free to run.
+Uses word-boundary regex alias resolution and intent signatures (no LLM call),
+making routing deterministic and sub-millisecond.
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
@@ -36,19 +36,18 @@ class RoutingDecision:
     query: str
     query_type: QueryType
     confidence: float                  # 0.0–1.0
-    detected_patterns: list[str]       # algorithm names mentioned in the query
+    detected_patterns: list[str]       # canonical algorithm names in order of appearance
     reason: str                        # human-readable explanation
 
     # Extracted intent signals
     pattern_a: Optional[str] = None    # for GRAPH_HOP comparisons
     pattern_b: Optional[str] = None
-    target_pattern: Optional[str] = None  # for prerequisite lookups
+    target_pattern: Optional[str] = None  # for prerequisite or single-pattern lookups
 
 
 # ── Known pattern aliases ────────────────────────────────────────────────
 
 PATTERN_ALIASES: dict[str, str] = {
-    # Canonical name → aliases
     "two pointers": "Two Pointers",
     "two pointer": "Two Pointers",
     "two-pointers": "Two Pointers",
@@ -59,6 +58,7 @@ PATTERN_ALIASES: dict[str, str] = {
     "prefix sum": "Prefix Sum",
     "prefix sums": "Prefix Sum",
     "fenwick tree": "Fenwick Tree",
+    "fenwick": "Fenwick Tree",
     "binary indexed tree": "Fenwick Tree",
     "bit": "Fenwick Tree",
     "segment tree": "Segment Tree",
@@ -69,7 +69,11 @@ PATTERN_ALIASES: dict[str, str] = {
     "dp": "Dynamic Programming",
     "dynamic programming": "Dynamic Programming",
     "bfs": "BFS",
+    "breadth-first search": "BFS",
+    "breadth first search": "BFS",
     "dfs": "DFS",
+    "depth-first search": "DFS",
+    "depth first search": "DFS",
     "dijkstra": "Dijkstra",
     "union find": "Union Find",
     "disjoint set": "Union Find",
@@ -82,7 +86,6 @@ PATTERN_ALIASES: dict[str, str] = {
     "priority queue": "Priority Queue",
     "sweep line": "Sweep Line",
     "grid simulation": "Grid Simulation",
-    "two pointer": "Two Pointers",
 }
 
 
@@ -92,9 +95,16 @@ GRAPH_HOP_KEYWORDS = {
     "prerequisite", "prerequisites", "before learning", "need to know",
     "depend", "dependency", "dependencies", "learning path", "learning order",
     "difference between", "differ", "compare", "comparison", "versus", "vs",
-    "tradeoff", "trade-off", "trade off", "alternative",
+    "tradeoff", "trade-off", "trade off", "alternative", "alternatives",
     "learn before", "should learn", "need to learn", "required before",
     "learn first", "related to", "neighbor", "neighbours", "neighbors",
+}
+
+PREREQ_INTENT_KEYWORDS = {
+    "prerequisite", "prerequisites", "before learning", "need to know",
+    "learning path", "learning order", "depend", "dependency", "dependencies",
+    "learn before", "should learn", "need to learn", "required before",
+    "learn first",
 }
 
 CODE_TEMPLATE_KEYWORDS = {
@@ -117,24 +127,30 @@ COMPLEXITY_KEYWORDS = {
 }
 
 
+def _compile_alias_regex(alias: str) -> re.Pattern[str]:
+    """Compile a word-boundary regex for an alias (allowing optional plural 's')."""
+    # Avoid matching "-bit" as in "8-bit" or "64-bit"
+    return re.compile(r"(?<![a-z0-9\-])\b" + re.escape(alias) + r"s?\b(?![\-a-z0-9])", re.I)
+
+
 class QueryRouter:
     """
     Deterministic query classifier for the GraphRAG system.
 
-    Routes queries to the optimal retrieval strategy based on keyword
-    analysis and pattern detection.
+    Routes queries to the optimal retrieval strategy based on intent signatures
+    and word-boundary pattern alias resolution.
     """
 
     def __init__(self, known_patterns: list[str] | None = None):
-        """
-        Args:
-            known_patterns: Optional list of pattern names in the graph.
-                If not provided, uses the built-in PATTERN_ALIASES.
-        """
         self._aliases = dict(PATTERN_ALIASES)
         if known_patterns:
             for p in known_patterns:
                 self._aliases[p.lower()] = p
+        # Sort longest alias first so "binary indexed tree" matches before "bit"
+        self._compiled_aliases: list[tuple[str, re.Pattern[str], str]] = [
+            (alias, _compile_alias_regex(alias), canonical)
+            for alias, canonical in sorted(self._aliases.items(), key=lambda x: -len(x[0]))
+        ]
 
     def classify(self, query: str) -> RoutingDecision:
         """
@@ -147,7 +163,9 @@ class QueryRouter:
         detected = self._detect_patterns(q_lower)
 
         # ── Stage 1: Contradiction detection ─────────────────────────
-        if self._has_keywords(q_lower, CONTRADICTION_KEYWORDS) or re.search(r"o\(.+?\)\s+or\s+o\(.+?\)", q_lower):
+        if self._has_keywords(q_lower, CONTRADICTION_KEYWORDS) or re.search(
+            r"o\(.+?\)\s+or\s+o\(.+?\)", q_lower
+        ):
             return RoutingDecision(
                 query=query,
                 query_type=QueryType.CONTRADICTION,
@@ -159,9 +177,12 @@ class QueryRouter:
 
         # ── Stage 2: Graph-hop (comparisons & prerequisites) ────────
         if self._has_keywords(q_lower, GRAPH_HOP_KEYWORDS):
-            # Check for A vs B comparison
+            # Pairwise relationship query ("Is X a prerequisite for Y?")
+            # vs comparison query ("Compare X and Y")
             a, b = self._detect_comparison_pair(q_lower, detected)
-            if a and b:
+            if a and b and not self._has_keywords(
+                q_lower, {"before learning", "need to know", "learn before", "should i learn before"}
+            ):
                 return RoutingDecision(
                     query=query,
                     query_type=QueryType.GRAPH_HOP,
@@ -172,13 +193,7 @@ class QueryRouter:
                     pattern_b=b,
                 )
 
-            # Prerequisite chain query
-            if self._has_keywords(q_lower, {"prerequisite", "before learning",
-                                            "need to know", "learning path",
-                                            "learning order", "depend",
-                                            "learn before", "should learn",
-                                            "need to learn", "required before",
-                                            "learn first"}):
+            if self._has_keywords(q_lower, PREREQ_INTENT_KEYWORDS):
                 target = detected[-1] if detected else None
                 return RoutingDecision(
                     query=query,
@@ -189,7 +204,6 @@ class QueryRouter:
                     target_pattern=target,
                 )
 
-            # Generic graph-hop
             return RoutingDecision(
                 query=query,
                 query_type=QueryType.GRAPH_HOP,
@@ -226,7 +240,7 @@ class QueryRouter:
             return RoutingDecision(
                 query=query,
                 query_type=QueryType.HYBRID,
-                confidence=0.70,
+                confidence=0.75,
                 detected_patterns=detected,
                 reason="Pattern(s) detected; using hybrid graph+vector retrieval.",
                 target_pattern=detected[0],
@@ -244,20 +258,31 @@ class QueryRouter:
     # ── Helpers ──────────────────────────────────────────────────────────
 
     def _detect_patterns(self, q_lower: str) -> list[str]:
-        """Find all known algorithmic patterns mentioned in the query."""
-        found: dict[str, int] = {}  # canonical_name → first occurrence position
-        for alias, canonical in sorted(
-            self._aliases.items(), key=lambda x: -len(x[0])
-        ):
-            pos = q_lower.find(alias)
-            if pos >= 0 and canonical not in found:
-                found[canonical] = pos
-        # Return in order of appearance
+        """Find all known algorithmic patterns mentioned in the query using word boundaries."""
+        found: dict[str, int] = {}
+        occupied: list[tuple[int, int]] = []
+        for _alias, pattern_re, canonical in self._compiled_aliases:
+            m = pattern_re.search(q_lower)
+            if not m:
+                continue
+            span = m.span()
+            # Skip if this match lies inside an already-matched longer alias span
+            if any(s <= span[0] and span[1] <= e for s, e in occupied):
+                continue
+            occupied.append(span)
+            if canonical not in found or span[0] < found[canonical]:
+                found[canonical] = span[0]
         return [name for name, _ in sorted(found.items(), key=lambda x: x[1])]
 
     def _has_keywords(self, q_lower: str, keywords: set[str]) -> bool:
-        """Check if any keyword appears in the query."""
-        return any(kw in q_lower for kw in keywords)
+        """Check if any keyword phrase appears on word boundaries in the query."""
+        for kw in keywords:
+            if " " in kw or "(" in kw or "-" in kw:
+                if kw in q_lower:
+                    return True
+            elif re.search(r"\b" + re.escape(kw) + r"\b", q_lower):
+                return True
+        return False
 
     def _detect_comparison_pair(
         self, q_lower: str, detected: list[str]
@@ -266,7 +291,6 @@ class QueryRouter:
         if len(detected) >= 2:
             return detected[0], detected[1]
 
-        # Try "X vs Y" / "X versus Y" / "X or Y" patterns
         vs_match = re.search(
             r"(\w[\w\s]+?)\s+(?:vs\.?|versus|or|compared to|differ\w* from)\s+(\w[\w\s]+)",
             q_lower,
@@ -280,23 +304,14 @@ class QueryRouter:
 
     def _resolve_pattern(self, text: str) -> Optional[str]:
         """Try to resolve a text fragment to a known pattern name."""
-        text_lower = text.lower().strip()
-        # Direct match
-        if text_lower in self._aliases:
-            return self._aliases[text_lower]
-        # Substring match (best effort)
-        for alias, canonical in sorted(
-            self._aliases.items(), key=lambda x: -len(x[0])
-        ):
-            if alias in text_lower:
-                return canonical
-        return None
+        matches = self._detect_patterns(text.lower().strip())
+        return matches[0] if matches else None
 
 
 # ── CLI demo ─────────────────────────────────────────────────────────────
 
 def demo():
-    """Classify the benchmark queries from test_queries.json."""
+    """Classify sample benchmark queries."""
     router = QueryRouter()
 
     test_queries = [
@@ -311,7 +326,7 @@ def demo():
     ]
 
     print("=" * 72)
-    print("Phase 4 — Query Router Classification Demo")
+    print("Query Router Classification Demo")
     print("=" * 72)
 
     for q in test_queries:
@@ -331,4 +346,3 @@ def demo():
 
 if __name__ == "__main__":
     demo()
-

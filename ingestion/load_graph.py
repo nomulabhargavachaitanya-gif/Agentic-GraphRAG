@@ -1,10 +1,10 @@
 """
-load_graph.py — Phase 1 manual seed of the GraphRAG knowledge graph.
+load_graph.py — Canonical knowledge-graph schema and seed loader for Neo4j.
 
-Creates the schema (constraints + indexes), inserts ~8 algorithmic pattern nodes
-with realistic properties, plus representative Problem, CodeTemplate, and Source
-nodes, then wires them together with PREREQUISITE_OF, ALTERNATIVE_TO,
-SAME_COMPLEXITY_CLASS, SOLVED_WITH, HAS_TEMPLATE, and EXTRACTED_FROM edges.
+Creates uniqueness constraints and full-text indexes, seeds canonical
+algorithmic Pattern, Problem, CodeTemplate, and Source nodes, and connects
+them via PREREQUISITE_OF, ALTERNATIVE_TO, SAME_COMPLEXITY_CLASS, SOLVED_WITH,
+HAS_TEMPLATE, and EXTRACTED_FROM edges.
 
 Idempotent: uses MERGE so re-running is safe.
 """
@@ -32,7 +32,7 @@ SCHEMA_STATEMENTS = [
     "CREATE CONSTRAINT pattern_name IF NOT EXISTS FOR (p:Pattern) REQUIRE p.name IS UNIQUE",
     "CREATE CONSTRAINT problem_id IF NOT EXISTS FOR (p:Problem) REQUIRE p.id IS UNIQUE",
     "CREATE CONSTRAINT source_url IF NOT EXISTS FOR (s:Source) REQUIRE s.url IS UNIQUE",
-    # Full-text index for semantic-ish search over pattern descriptions (Phase 4 will use vector search)
+    # Full-text index for fallback keyword search over pattern descriptions
     """
     CREATE FULLTEXT INDEX pattern_description IF NOT EXISTS
     FOR (p:Pattern)
@@ -587,7 +587,7 @@ def _load_sources(tx):
 
 def _load_code_templates(tx):
     for tmpl in CODE_TEMPLATES:
-        # Use a composite key of pattern name (since we have one template per pattern in Phase 1)
+        # Use a composite key of pattern name for the canonical seed templates
         tx.run(
             """
             MERGE (ct:CodeTemplate {pattern_name: $pattern})
@@ -621,7 +621,7 @@ def _load_code_templates(tx):
 
 
 def load_all(uri: str = NEO4J_URI, user: str = NEO4J_USER, password: str = NEO4J_PASSWORD):
-    """Connect to Neo4j and load the full Phase 1 graph."""
+    """Connect to Neo4j and load the canonical seed graph."""
     driver = GraphDatabase.driver(uri, auth=(user, password))
 
     # Verify connectivity

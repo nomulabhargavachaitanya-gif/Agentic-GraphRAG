@@ -70,7 +70,7 @@ _CODE_FENCE_RE = re.compile(
 
 def extract_code_blocks(markdown_text: str) -> list[str]:
     """Extract all fenced code blocks from markdown text."""
-    return _CODE_FENCE_RE.findall(markdown_text)
+    return [c.strip() for c in _CODE_FENCE_RE.findall(markdown_text) if c.strip()]
 
 
 def analyze_code_block(code: str) -> CodeBlock:

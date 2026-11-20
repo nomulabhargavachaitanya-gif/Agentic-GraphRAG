@@ -1,20 +1,10 @@
 """
-extract_entities.py — LLM-based entity and relationship extraction.
+extract_entities.py — Dual-mode entity and relationship extractor.
 
-Takes parsed editorials (prose + code blocks) and uses Claude to extract
-structured entities (Patterns, Relationships, CodeTemplates) matching
-the graph schema defined in the spec.
-
-Supports:
-  - Full LLM extraction via Anthropic Claude API
-  - Rule-based fallback extraction (no API key needed) for testing/demo
-
-Output schema matches section 8 of the spec:
-{
-    "patterns": [{"name", "description", "time_complexity", "space_complexity", "category"}],
-    "relationships": [{"from", "to", "type", "detail"}],
-    "code_templates": [{"pattern", "code", "explanation"}]
-}
+Takes parsed editorials (prose + C++ code blocks) and extracts structured
+entities (Patterns, Relationships, CodeTemplates) for the knowledge graph:
+  - LLM structured JSON extraction via Google Gemini (--mode llm)
+  - Deterministic rule-based extraction (--mode rules, no API key required)
 """
 
 from __future__ import annotations
@@ -374,10 +364,8 @@ def normalize_pattern_name(name: str) -> str:
 
 def deduplicate_patterns(results: list[ExtractionResult]) -> dict[str, ExtractedPattern]:
     """
-    Deduplicate patterns across multiple extraction results.
-
-    Uses canonical name matching. In Phase 3+ this will use embedding
-    similarity to catch near-duplicates like "Two Pointer" vs "Two Pointers".
+    Deduplicate patterns across multiple extraction results using canonical
+    alias normalization, retaining the most detailed description per pattern.
     """
     seen: dict[str, ExtractedPattern] = {}
     # Normalize: strip whitespace, title-case
