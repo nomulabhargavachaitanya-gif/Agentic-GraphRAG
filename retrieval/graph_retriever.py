@@ -1,18 +1,10 @@
 """
-graph_retriever.py — Cypher-based retrieval for GraphRAG Phase 1.
+graph_retriever.py — Cypher & In-Memory Knowledge Graph Retrieval Engine.
 
-Implements three queries matching test cases from the spec (§7):
-
-  Query 1: "How does a segment tree differ from a Fenwick tree for range queries?"
-           → graph-hop via ALTERNATIVE_TO edge, returns both templates.
-
-  Query 2: "What do I need to know before learning suffix arrays?"
-           → graph-hop via recursive PREREQUISITE_OF chain.
-
-  Query 4: "What's the time complexity of a sparse table?"
-           → property lookup on a Pattern node (+ full-text search fallback).
-
-Each function returns structured dicts ready for downstream synthesis.
+Supports multi-hop prerequisite traversal (PREREQUISITE_OF*1..10), pairwise
+pattern comparisons (ALTERNATIVE_TO), canonical complexity lookups, neighbor
+expansion, and verified C++ template retrieval against Neo4j, with automatic
+fallback to InMemoryGraphRetriever when running in serverless environments.
 """
 
 from __future__ import annotations
@@ -116,7 +108,9 @@ class GraphRetriever:
                 RETURN a {.*} AS pa,
                        b {.*} AS pb,
                        type(r) AS rel_type,
-                       r.tradeoff AS tradeoff
+                       COALESCE(r.tradeoff, r.detail) AS tradeoff
+                ORDER BY (r.tradeoff IS NOT NULL) DESC
+                LIMIT 1
                 """,
                 a=pattern_a,
                 b=pattern_b,

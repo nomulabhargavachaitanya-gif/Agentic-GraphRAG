@@ -1,25 +1,23 @@
 """
-hybrid_retriever.py — Phase 4: Hybrid Retrieval Engine.
+hybrid_retriever.py — Hybrid Graph + Dense/BM25 RRF Retrieval Engine.
 
-Orchestrates joint retrieval across the Knowledge Graph (Neo4j) and
-Vector Store (FAISS) based on the QueryRouter's classification.
+Orchestrates joint retrieval across the Knowledge Graph (Neo4j or In-Memory
+Graph Fallback) and Vector Store (FAISS + Okapi BM25 Reciprocal Rank Fusion)
+based on the QueryRouter's classification:
 
-Retrieval strategies:
-  GRAPH_HOP     → Cypher traversal only (prerequisites, comparisons)
-  CODE_TEMPLATE → Vector code search + graph template lookup
-  SEMANTIC      → Vector similarity search only
-  HYBRID        → Vector search → extract pattern_ids → graph expansion
-  CONTRADICTION → Multi-source vector search for conflicting claims
+  GRAPH_HOP     → Cypher multi-hop traversal (prerequisites, comparisons) + RRF vector context
+  CODE_TEMPLATE → Verified graph C++ template lookup + filtered vector code search
+  SEMANTIC      → Dense + BM25 RRF vector search
+  HYBRID        → RRF vector search → pattern entity extraction → 1-hop graph expansion
+  CONTRADICTION → Canonical graph complexity lookup + multi-source vector retrieval
 """
 
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import dataclass, field
 
 from retrieval.query_router import QueryRouter, QueryType, RoutingDecision
-from retrieval.vector_retriever import VectorRetriever, VectorRetrievalResult
+from retrieval.vector_retriever import VectorRetriever
 
 
 def _l2_to_similarity(dist: float) -> float:
@@ -49,9 +47,9 @@ class HybridRetrievalResult:
     query: str
     routing: RoutingDecision
     contexts: list[RetrievedContext]
-    graph_data: dict = field(default_factory=dict)  # raw graph results
+    graph_data: dict = field(default_factory=dict)
     total_contexts: int = 0
-    retrieval_path: str = ""     # human-readable description of strategy used
+    retrieval_path: str = ""
 
     def to_prompt_context(self) -> str:
         """Format all retrieved contexts into a single prompt-ready string."""
@@ -70,11 +68,8 @@ class HybridRetrievalResult:
 
 class HybridRetriever:
     """
-    Orchestrates retrieval across graph and vector stores.
-
-    For offline (no Neo4j) usage, graph queries gracefully degrade:
-    comparison and prerequisite queries return what the vector store
-    can provide, flagged as partial.
+    Orchestrates retrieval across graph and vector stores with RRF fusion
+    and chunk deduplication.
     """
 
     def __init__(
@@ -106,10 +101,19 @@ class HybridRetriever:
     def has_vector(self) -> bool:
         return self.vector.is_ready
 
+    @staticmethod
+    def _deduplicate(contexts: list[RetrievedContext]) -> list[RetrievedContext]:
+        seen: set[tuple[str, str]] = set()
+        unique: list[RetrievedContext] = []
+        for ctx in contexts:
+            sig = (ctx.source_type, ctx.text[:160].strip())
+            if sig not in seen:
+                seen.add(sig)
+                unique.append(ctx)
+        return unique
+
     def retrieve(self, query: str, k: int = 5) -> HybridRetrievalResult:
-        """
-        Main entry point: classify the query and dispatch to retrievers.
-        """
+        """Classify the query and dispatch to the selected retrieval strategy."""
         decision = self.router.classify(query)
 
         dispatch = {
@@ -122,8 +126,38 @@ class HybridRetriever:
 
         handler = dispatch.get(decision.query_type, self._retrieve_semantic)
         result = handler(decision, k=k)
+        result.contexts = self._deduplicate(result.contexts)
         result.total_contexts = len(result.contexts)
         return result
+
+    def retrieve_vector_only(self, query: str, k: int = 5) -> HybridRetrievalResult:
+        """Pure dense vector baseline without routing or graph traversal (for ablation)."""
+        decision = RoutingDecision(
+            query=query,
+            query_type=QueryType.SEMANTIC,
+            confidence=1.0,
+            detected_patterns=[],
+            reason="Vanilla vector-only baseline (ablation).",
+        )
+        contexts: list[RetrievedContext] = []
+        if self.has_vector:
+            results = self.vector.store.search(query, k=k, use_rrf=False)
+            for r in results:
+                contexts.append(RetrievedContext(
+                    text=r.text,
+                    source_type=f"vector_{r.metadata.chunk_type}",
+                    relevance_score=_l2_to_similarity(r.score),
+                    pattern_ids=r.metadata.pattern_ids,
+                    source_url=r.metadata.source_url,
+                    metadata={"editorial_id": r.metadata.editorial_id},
+                ))
+        return HybridRetrievalResult(
+            query=query,
+            routing=decision,
+            contexts=contexts,
+            total_contexts=len(contexts),
+            retrieval_path=f"vector_only(k={k})",
+        )
 
     # ── Strategy 1: Graph-Hop ────────────────────────────────────────
 
@@ -134,7 +168,6 @@ class HybridRetriever:
         contexts: list[RetrievedContext] = []
         graph_data: dict = {}
 
-        # Comparison query: A vs B
         if decision.pattern_a and decision.pattern_b:
             if self.has_graph:
                 try:
@@ -143,7 +176,6 @@ class HybridRetriever:
                     )
                     if result:
                         graph_data["comparison"] = _safe_asdict(result)
-                        # Build context from comparison
                         contexts.append(RetrievedContext(
                             text=(
                                 f"Comparison: {result.pattern_a.name} vs {result.pattern_b.name}\n"
@@ -163,7 +195,6 @@ class HybridRetriever:
                             pattern_ids=[decision.pattern_a, decision.pattern_b],
                         ))
 
-                        # Add templates
                         for tmpl in getattr(result, "templates", []):
                             contexts.append(RetrievedContext(
                                 text=f"// {tmpl.pattern} — C++ Template\n{tmpl.code}",
@@ -174,9 +205,8 @@ class HybridRetriever:
                                 metadata={"explanation": tmpl.explanation},
                             ))
                 except Exception:
-                    pass  # Fall through to vector
+                    pass
 
-            # Supplement with vector results
             if self.has_vector:
                 self._add_vector_contexts(
                     contexts, decision.query, k=k,
@@ -188,10 +218,9 @@ class HybridRetriever:
                 routing=decision,
                 contexts=contexts,
                 graph_data=graph_data,
-                retrieval_path=f"graph_comparison({decision.pattern_a}, {decision.pattern_b}) + vector",
+                retrieval_path=f"graph_comparison({decision.pattern_a}, {decision.pattern_b}) + rrf_vector",
             )
 
-        # Prerequisite chain query
         if decision.target_pattern:
             if self.has_graph:
                 try:
@@ -216,7 +245,6 @@ class HybridRetriever:
                 except Exception:
                     pass
 
-            # Supplement with vector
             if self.has_vector:
                 self._add_vector_contexts(
                     contexts, decision.query, k=k,
@@ -228,10 +256,9 @@ class HybridRetriever:
                 routing=decision,
                 contexts=contexts,
                 graph_data=graph_data,
-                retrieval_path=f"graph_prerequisites({decision.target_pattern}) + vector",
+                retrieval_path=f"graph_prerequisites({decision.target_pattern}) + rrf_vector",
             )
 
-        # Generic graph hop — neighbors
         if decision.detected_patterns and self.has_graph:
             pattern = decision.detected_patterns[0]
             try:
@@ -251,7 +278,6 @@ class HybridRetriever:
             except Exception:
                 pass
 
-        # Always supplement with vector
         if self.has_vector:
             self._add_vector_contexts(contexts, decision.query, k=k)
 
@@ -260,7 +286,7 @@ class HybridRetriever:
             routing=decision,
             contexts=contexts,
             graph_data=graph_data,
-            retrieval_path="graph_neighbors + vector",
+            retrieval_path="graph_neighbors + rrf_vector",
         )
 
     # ── Strategy 2: Code Template ────────────────────────────────────
@@ -272,7 +298,6 @@ class HybridRetriever:
         contexts: list[RetrievedContext] = []
         graph_data: dict = {}
 
-        # Try graph template first
         if self.has_graph and decision.target_pattern:
             try:
                 tmpl = self.graph.get_template(decision.target_pattern)
@@ -289,7 +314,6 @@ class HybridRetriever:
             except Exception:
                 pass
 
-        # Vector code search
         if self.has_vector:
             code_results = self.vector.search_code(
                 decision.query, k=k,
@@ -302,10 +326,13 @@ class HybridRetriever:
                     relevance_score=_l2_to_similarity(r.score),
                     pattern_ids=r.metadata.pattern_ids,
                     source_url=r.metadata.source_url,
-                    metadata={"editorial_id": r.metadata.editorial_id},
+                    metadata={
+                        "editorial_id": r.metadata.editorial_id,
+                        "bm25_score": r.bm25_score,
+                        "rrf_score": r.rrf_score,
+                    },
                 ))
 
-            # Also get prose explanations
             prose_results = self.vector.search_prose(
                 decision.query, k=min(k, 2),
                 pattern=decision.target_pattern,
@@ -317,7 +344,11 @@ class HybridRetriever:
                     relevance_score=_l2_to_similarity(r.score),
                     pattern_ids=r.metadata.pattern_ids,
                     source_url=r.metadata.source_url,
-                    metadata={"editorial_id": r.metadata.editorial_id},
+                    metadata={
+                        "editorial_id": r.metadata.editorial_id,
+                        "bm25_score": r.bm25_score,
+                        "rrf_score": r.rrf_score,
+                    },
                 ))
 
         return HybridRetrievalResult(
@@ -325,7 +356,7 @@ class HybridRetriever:
             routing=decision,
             contexts=contexts,
             graph_data=graph_data,
-            retrieval_path=f"graph_template({decision.target_pattern}) + vector_code",
+            retrieval_path=f"graph_template({decision.target_pattern}) + rrf_vector_code",
         )
 
     # ── Strategy 3: Pure Semantic ────────────────────────────────────
@@ -333,7 +364,7 @@ class HybridRetriever:
     def _retrieve_semantic(
         self, decision: RoutingDecision, k: int = 5
     ) -> HybridRetrievalResult:
-        """Pure vector similarity search — no graph traversal."""
+        """Vector + BM25 RRF search without graph traversal."""
         contexts: list[RetrievedContext] = []
 
         if self.has_vector:
@@ -343,7 +374,7 @@ class HybridRetriever:
             query=decision.query,
             routing=decision,
             contexts=contexts,
-            retrieval_path="vector_semantic_only",
+            retrieval_path="vector_bm25_rrf",
         )
 
     # ── Strategy 4: Hybrid ───────────────────────────────────────────
@@ -351,11 +382,10 @@ class HybridRetriever:
     def _retrieve_hybrid(
         self, decision: RoutingDecision, k: int = 5
     ) -> HybridRetrievalResult:
-        """Vector search → extract pattern IDs → graph expansion."""
+        """RRF vector search → extract pattern IDs → 1-hop graph expansion."""
         contexts: list[RetrievedContext] = []
         graph_data: dict = {}
 
-        # Step 1: Vector search
         linked_patterns: list[str] = []
         if self.has_vector:
             v_result = self.vector.search(decision.query, k=k)
@@ -368,17 +398,19 @@ class HybridRetriever:
                     relevance_score=_l2_to_similarity(r.score),
                     pattern_ids=r.metadata.pattern_ids,
                     source_url=r.metadata.source_url,
-                    metadata={"editorial_id": r.metadata.editorial_id},
+                    metadata={
+                        "editorial_id": r.metadata.editorial_id,
+                        "bm25_score": r.bm25_score,
+                        "rrf_score": r.rrf_score,
+                    },
                 ))
 
-        # Step 2: Graph expansion from detected patterns
         all_patterns = list(
             dict.fromkeys(decision.detected_patterns + linked_patterns)
         )
 
         if self.has_graph and all_patterns:
-            for pattern in all_patterns[:3]:  # limit to top 3
-                # Get complexity info
+            for pattern in all_patterns[:3]:
                 try:
                     cx = self.graph.pattern_complexity(pattern)
                     if cx:
@@ -391,13 +423,12 @@ class HybridRetriever:
                                 f"  Description: {cx.pattern.description}"
                             ),
                             source_type="graph",
-                            relevance_score=0.90,
+                            relevance_score=0.92,
                             pattern_ids=[pattern],
                         ))
                 except Exception:
                     pass
 
-                # Get neighbors
                 try:
                     neighbors = self.graph.get_neighbors(pattern)
                     if neighbors:
@@ -410,7 +441,7 @@ class HybridRetriever:
             routing=decision,
             contexts=contexts,
             graph_data=graph_data,
-            retrieval_path=f"vector(k={k}) → graph_expand({all_patterns[:3]})",
+            retrieval_path=f"rrf_vector(k={k}) → graph_expand({all_patterns[:3]})",
         )
 
     # ── Strategy 5: Contradiction Detection ──────────────────────────
@@ -418,10 +449,7 @@ class HybridRetriever:
     def _retrieve_contradiction(
         self, decision: RoutingDecision, k: int = 5
     ) -> HybridRetrievalResult:
-        """
-        Retrieve multiple sources discussing the same pattern to find
-        potentially conflicting claims.
-        """
+        """Retrieve multiple sources + canonical graph node for conflict verification."""
         contexts: list[RetrievedContext] = []
         graph_data: dict = {}
 
@@ -430,7 +458,6 @@ class HybridRetriever:
         )
 
         if self.has_vector and target:
-            # Get more results to find divergent claims
             v_result = self.vector.search(
                 decision.query, k=k * 2, pattern_filter=target
             )
@@ -444,10 +471,11 @@ class HybridRetriever:
                     metadata={
                         "editorial_id": r.metadata.editorial_id,
                         "requires_contradiction_check": True,
+                        "bm25_score": r.bm25_score,
+                        "rrf_score": r.rrf_score,
                     },
                 ))
 
-        # Graph contradiction edges
         if self.has_graph and target:
             try:
                 cx = self.graph.pattern_complexity(target)
@@ -484,7 +512,6 @@ class HybridRetriever:
         k: int = 5,
         pattern_filter: str | None = None,
     ):
-        """Add vector search results to the contexts list."""
         v_result = self.vector.search(
             query, k=k, pattern_filter=pattern_filter
         )
@@ -495,12 +522,15 @@ class HybridRetriever:
                 relevance_score=_l2_to_similarity(r.score),
                 pattern_ids=r.metadata.pattern_ids,
                 source_url=r.metadata.source_url,
-                metadata={"editorial_id": r.metadata.editorial_id},
+                metadata={
+                    "editorial_id": r.metadata.editorial_id,
+                    "bm25_score": r.bm25_score,
+                    "rrf_score": r.rrf_score,
+                },
             ))
 
 
 def _safe_asdict(obj) -> dict:
-    """Safely convert a dataclass to dict, handling nested objects."""
     try:
         from dataclasses import asdict
         return asdict(obj)
@@ -511,9 +541,9 @@ def _safe_asdict(obj) -> dict:
 # ── CLI demo ─────────────────────────────────────────────────────────────
 
 def demo():
-    """Run the hybrid retriever on benchmark queries (vector-only mode)."""
+    """Run the hybrid retriever on benchmark queries."""
     print("=" * 72)
-    print("Phase 4 — Hybrid Retrieval Demo (offline mode, no Neo4j)")
+    print("Hybrid Retrieval Demo (Graph + FAISS/BM25 RRF)")
     print("=" * 72)
 
     retriever = HybridRetriever()
@@ -542,9 +572,8 @@ def demo():
             preview = ctx.text[:80].replace("\n", " ")
             print(f"    [{ctx.source_type}] {ctx.relevance_score:.2f}: \"{preview}...\"")
 
-    print(f"\n✓ Hybrid retrieval demo complete.")
+    print("\n✓ Hybrid retrieval demo complete.")
 
 
 if __name__ == "__main__":
     demo()
-
