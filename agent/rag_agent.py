@@ -1,22 +1,13 @@
 """
-rag_agent.py — Phase 5: Self-Correcting Agentic RAG Loop.
+rag_agent.py — Self-Correcting Agentic GraphRAG Loop.
 
 Implements the core agentic loop that:
   1. Receives a user query
-  2. Dispatches to the hybrid retriever (Phase 4)
-  3. Grades retrieved context for relevance & sufficiency
-  4. Self-corrects: widens search, retries, or abstains honestly
-  5. Synthesizes a grounded, cited answer
-
-The grading + retry loop is fully deterministic (no LLM needed for grading),
-using heuristic scoring on retrieved contexts. An optional LLM synthesis
-step uses the Anthropic API if available, otherwise returns structured
-context directly.
-
-Design goals:
-  - Zero hallucination: abstains when corpus coverage is insufficient
-  - Full attribution: every claim linked to source chunks
-  - Self-correcting: automatically widens retrieval on low scores
+  2. Dispatches to the hybrid Graph + FAISS/BM25 RRF retriever
+  3. Grades retrieved context across Relevance, Sufficiency, and Coverage
+  4. Self-corrects: widens search window (k -> 2k), retries, or abstains
+  5. Runs two-stage Big-O contradiction detection when applicable
+  6. Synthesizes a grounded, source-attributed answer via Google Gemini
 """
 
 from __future__ import annotations
@@ -359,10 +350,11 @@ class AnswerSynthesizer:
 
 class RAGAgent:
     """
-    Self-correcting agentic RAG system.
+    Self-correcting agentic GraphRAG system.
 
-    Implements the retrieve → grade → retry/widen → synthesize loop
-    described in Phase 5 of the project architecture.
+    Implements the retrieve → grade → retry/widen → contradiction-check →
+    synthesize loop, plus configurable baseline modes ("vector_only",
+    "hybrid_no_agent", "full_agentic") for ablation benchmarking.
     """
 
     def __init__(
@@ -376,99 +368,128 @@ class RAGAgent:
         self.synthesizer = synthesizer or AnswerSynthesizer()
         self.contradiction_detector = ContradictionDetector()
 
-    def query(self, question: str, k: int = 5, verbose: bool = False) -> AgentResponse:
+    def query(
+        self,
+        question: str,
+        k: int = 5,
+        verbose: bool = False,
+        mode: str = "full_agentic",
+    ) -> AgentResponse:
         """
-        Process a user query through the full agentic RAG pipeline.
+        Process a user query through the RAG pipeline.
 
-        1. Route & retrieve (hybrid)
-        2. Grade context quality
-        3. Self-correct if needed (widen search, retry)
-        4. Synthesize grounded answer or abstain
+        Args:
+            question: Natural language query.
+            k: Initial retrieval window size.
+            verbose: Print step-by-step agent trace.
+            mode: One of "full_agentic" (default), "hybrid_no_agent", or "vector_only".
         """
         retries = 0
         current_k = k
         best_result: Optional[HybridRetrievalResult] = None
         best_grading: Optional[GradingResult] = None
+        allow_retry = mode == "full_agentic"
 
-        while retries <= MAX_RETRIES:
+        while retries <= (MAX_RETRIES if allow_retry else 0):
             if verbose:
-                print(f"  [Agent] Attempt {retries + 1}/{MAX_RETRIES + 1} (k={current_k})")
+                print(f"  [Agent:{mode}] Attempt {retries + 1} (k={current_k})")
 
-            # Step 1: Retrieve
-            result = self.retriever.retrieve(question, k=current_k)
+            if mode == "vector_only":
+                result = self.retriever.retrieve_vector_only(question, k=current_k)
+            else:
+                result = self.retriever.retrieve(question, k=current_k)
 
             if verbose:
-                print(f"  [Agent] Route: {result.routing.query_type.value}, "
+                print(f"  [Agent:{mode}] Route: {result.routing.query_type.value}, "
                       f"Contexts: {len(result.contexts)}")
 
-            # Step 2: Grade
             grading = self.grader.grade(
                 question, result.contexts, result.routing
             )
 
             if verbose:
-                print(f"  [Agent] Grade: {grading.verdict} "
+                print(f"  [Agent:{mode}] Grade: {grading.verdict} "
                       f"(overall={grading.overall_score:.2f}, "
                       f"relevant={grading.num_relevant_chunks}/{grading.total_chunks})")
 
-            # Track best attempt
             if best_grading is None or grading.overall_score > best_grading.overall_score:
                 best_result = result
                 best_grading = grading
 
-            # Step 3: Check if sufficient
-            if grading.verdict == "sufficient":
+            if not allow_retry or grading.verdict == "sufficient":
                 break
 
             if grading.verdict == "abstain" and retries >= 1:
-                # Already retried once with wider search — give up
                 break
 
             if retries >= MAX_RETRIES:
                 break
 
-            # Step 4: Self-correct — widen the search
             retries += 1
-            current_k = min(current_k * 2, 20)  # double k, cap at 20
+            current_k = min(current_k * 2, 20)
 
             if verbose:
-                print(f"  [Agent] Retrying with k={current_k}...")
+                print(f"  [Agent:{mode}] Retrying with k={current_k}...")
 
-        # Use best result
         assert best_result is not None
         assert best_grading is not None
 
-        # Step 5: Synthesize answer
-        is_abstention = best_grading.verdict == "abstain"
+        # Only full_agentic enforces calibrated abstention and contradiction verification
+        is_abstention = (mode == "full_agentic") and (best_grading.verdict == "abstain")
         contradiction_report = None
-        if best_result.routing.query_type == QueryType.CONTRADICTION and not is_abstention:
+        if (
+            mode == "full_agentic"
+            and best_result.routing.query_type == QueryType.CONTRADICTION
+            and not is_abstention
+        ):
             target = best_result.routing.target_pattern or (
                 best_result.routing.detected_patterns[0]
-                if best_result.routing.detected_patterns else None)
+                if best_result.routing.detected_patterns else None
+            )
             contradiction_report = self.contradiction_detector.detect(target, best_result.contexts)
         is_contradiction = bool(contradiction_report and contradiction_report.detected)
+
+        effective_grading = best_grading
+        if mode != "full_agentic" and best_grading.verdict == "abstain":
+            effective_grading = GradingResult(
+                relevance_score=best_grading.relevance_score,
+                sufficiency_score=best_grading.sufficiency_score,
+                coverage_score=best_grading.coverage_score,
+                has_code=best_grading.has_code,
+                has_graph_data=best_grading.has_graph_data,
+                num_relevant_chunks=best_grading.num_relevant_chunks,
+                total_chunks=best_grading.total_chunks,
+                verdict="partial",
+                reason="Abstention gate disabled in baseline mode.",
+            )
 
         answer = self.synthesizer.synthesize(
             question,
             best_result.contexts,
-            best_grading,
+            effective_grading,
             best_result.routing,
             contradiction_report=contradiction_report,
         )
 
-        # Build source attribution
+        # Build clean source attribution: omit sources when abstaining,
+        # and filter out low-relevance background noise on grounded responses.
         sources = []
-        for ctx in best_result.contexts:
-            src = {
-                "type": ctx.source_type,
-                "patterns": ctx.pattern_ids,
-                "relevance": round(ctx.relevance_score, 3),
-            }
-            if ctx.source_url:
-                src["url"] = ctx.source_url
-            if "editorial_id" in ctx.metadata:
-                src["editorial_id"] = ctx.metadata["editorial_id"]
-            sources.append(src)
+        if not is_abstention:
+            for ctx in best_result.contexts:
+                if ctx.source_type not in ("graph", "graph_template") and ctx.relevance_score < RELEVANCE_THRESHOLD:
+                    continue
+                src = {
+                    "type": ctx.source_type,
+                    "patterns": ctx.pattern_ids,
+                    "relevance": round(ctx.relevance_score, 3),
+                }
+                if ctx.source_url:
+                    src["url"] = ctx.source_url
+                if "editorial_id" in ctx.metadata:
+                    src["editorial_id"] = ctx.metadata["editorial_id"]
+                if "rrf_score" in ctx.metadata:
+                    src["rrf_score"] = ctx.metadata["rrf_score"]
+                sources.append(src)
 
         return AgentResponse(
             query=question,
@@ -480,11 +501,16 @@ class RAGAgent:
             abstained=is_abstention,
             contradiction_detected=is_contradiction,
             metadata={
+                "mode": mode,
                 "routing": {
                     "type": best_result.routing.query_type.value,
                     "confidence": best_result.routing.confidence,
                     "detected_patterns": best_result.routing.detected_patterns,
+                    "pattern_a": best_result.routing.pattern_a,
+                    "pattern_b": best_result.routing.pattern_b,
+                    "target_pattern": best_result.routing.target_pattern,
                 },
+                "graph_data": best_result.graph_data,
                 "contradiction": contradiction_report,
             },
         )
@@ -499,9 +525,9 @@ class RAGAgent:
 # ── CLI demo ─────────────────────────────────────────────────────────────
 
 def demo():
-    """Run the agentic RAG on all benchmark queries."""
+    """Run the agentic RAG on core benchmark queries."""
     print("=" * 72)
-    print("Phase 5 — Self-Correcting Agentic RAG Demo")
+    print("Self-Correcting Agentic GraphRAG Demo")
     print("=" * 72)
 
     agent = RAGAgent()

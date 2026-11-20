@@ -1,9 +1,9 @@
 """
-Phase 6: Contradiction detection.
+contradiction.py — Two-Stage Big-O Complexity Contradiction Detector.
 
-Compares Big-O complexity claims made by different sources about the same
-pattern operation (build / query / update / ...). A conflict is two sources
-asserting *different* complexities for the *same* operation.
+Compares asymptotic complexity claims made by different sources about the same
+pattern operation (build / query / update). A conflict is two sources asserting
+different complexities for the same operation.
 
 Pipeline:
   1. Rule-based claim extraction: every O(...) expression is tagged with the
@@ -76,6 +76,8 @@ def extract_claims(text: str, pattern: str | None = None,
                 continue
             after = sent[m.end(): matches[i + 1].start() if i + 1 < len(matches) else len(sent)]
             ops = _ops_in(after) or _ops_in(before)
+            if not ops and not skip_summaries and re.search(r"\btime\b", before, re.I):
+                ops = ["query"]
             for op in ops:
                 c = (op, normalize_big_o(m.group(0)))
                 if c not in claims:
